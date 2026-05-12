@@ -92,3 +92,4 @@ LABEL version=$RELEASE_VERSION \
     maintainer="dkorecko"
 
 ENTRYPOINT ["dotnet", "PatchPanda.Web.dll"]
+# action trigger...
