@@ -21,11 +21,6 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Octokit" Version="14.0.0" />
-
-    <PackageReference Include="golang.org/x/net" Version="0.53.0" />
-    <PackageReference Include="github.com/moby/spdystream" Version="0.5.1" />
-    <PackageReference Include="go.opentelemetry.io/otel" Version="1.43.0" />
-    <PackageReference Include="go.opentelemetry.io/otel/sdk" Version="1.43.0" />
   </ItemGroup>
 
   <ItemGroup>
