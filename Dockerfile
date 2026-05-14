@@ -5,7 +5,7 @@
 ARG BUILDPLATFORM
 
 # ============================================================================
-# STAGE 1: Base Runtime (Hardened Resolute)
+# STAGE 1: Base Runtime (Hardened)
 # ============================================================================
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-resolute AS base
 
@@ -16,10 +16,7 @@ EXPOSE 8080
 USER root
 RUN apt-get update && \
     apt-get upgrade -y && \
-    apt-get install -y --no-install-recommends \
-        curl \
-        ca-certificates \
-        gnupg && \
+    apt-get install -y --no-install-recommends curl ca-certificates gnupg && \
     rm -rf /var/lib/apt/lists/*
 USER app
 
@@ -35,7 +32,6 @@ WORKDIR /src
 # Copy project file and restore specifically for the target architecture
 COPY ["PatchPanda.Web/PatchPanda.Web.csproj", "PatchPanda.Web/"]
 
-# Restore with strict ARMv7 validation
 RUN export DOTNET_ARCH=$(case ${TARGETARCH} in \
     "amd64") echo "x64" ;; \
     "arm64") echo "arm64" ;; \
@@ -67,13 +63,13 @@ RUN export DOTNET_ARCH=$(case ${TARGETARCH} in \
 # ============================================================================
 FROM base AS final
 
-# Set up environment and diagnostics (Merged logic from main and your branch)
+# Set up environment and diagnostics
 ARG RELEASE_VERSION
 ARG ENABLE_DIAGNOSTICS=0
 ENV APP_VERSION=$RELEASE_VERSION
 ENV DOTNET_EnableDiagnostics=${ENABLE_DIAGNOSTICS}
 
-# Install Docker CLI using Ubuntu 'resolute' repo (Critical for CVE remediation)
+# Install Docker CLI using Ubuntu 'resolute' repo
 USER root
 RUN mkdir -m 0755 -p /etc/apt/keyrings && \
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg && \
@@ -84,20 +80,19 @@ RUN mkdir -m 0755 -p /etc/apt/keyrings && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-
-# Copy artifacts (owned by root initially for integrity)
+# Copy artifacts first (owned by root for security)
 COPY --from=build /app/publish .
 
-# Create data directory and fix permissions for non-root 'app' user
+# Create data directory and fix permissions AFTER artifacts are copied
+# Narrowed chown ensures binaries stay read-only while data is writable
 RUN mkdir -p /app/data && \
     chown -R app:app /app/data
 
-# Use built-in health check
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
   CMD curl -f http://localhost:8080/ || exit 1
 
 LABEL version=$RELEASE_VERSION \
-    description="PatchPanda Web Application (Hardened Resolute)" \
+    description="PatchPanda Web Application" \
     maintainer="dkorecko"
 
 USER app
