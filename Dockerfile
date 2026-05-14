@@ -1,13 +1,12 @@
-# PatchPanda.Web - Multi-Stage Docker Build (May 2026 Refined)
+# PatchPanda.Web - Multi-Stage Docker Build (2026 Standards)
 # Support: amd64, arm64, arm/v7
-# Base OS: Ubuntu 26.04 LTS (Resolute) - Resolves transitive Go CVEs in stdlib 1.26.2
+# Features: Non-root user, Security Patches, Docker-in-Docker CLI, OIDC Ready, Health Checks
 
 ARG BUILDPLATFORM
 
 # ============================================================================
 # STAGE 1: Base Runtime (Hardened Resolute)
 # ============================================================================
-# Switching from generic :10.0 to :10.0-resolute to get the latest OS security baseline
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-resolute AS base
 
 WORKDIR /app
@@ -20,13 +19,12 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         curl \
         ca-certificates \
-        gnupg \
-        lsb-release && \
+        gnupg && \
     rm -rf /var/lib/apt/lists/*
 USER app
 
 # ============================================================================
-# STAGE 2: Build (Cross-Platform Resolute)
+# STAGE 2: Build (Cross-Platform)
 # ============================================================================
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0-resolute AS build
 
@@ -37,11 +35,11 @@ WORKDIR /src
 # Copy project file and restore specifically for the target architecture
 COPY ["PatchPanda.Web/PatchPanda.Web.csproj", "PatchPanda.Web/"]
 
-# Optimization: Unified architecture mapping logic
+# Restore with strict ARMv7 validation
 RUN export DOTNET_ARCH=$(case ${TARGETARCH} in \
     "amd64") echo "x64" ;; \
     "arm64") echo "arm64" ;; \
-    "arm") [ "${TARGETVARIANT}" = "v7" ] && echo "arm" || { echo "ERROR: Unsupported ARM variant"; exit 1; } ;; \
+    "arm") [ "${TARGETVARIANT}" = "v7" ] && echo "arm" || { echo "ERROR: Unsupported ARM variant '${TARGETVARIANT}'"; exit 1; } ;; \
     *) echo "ERROR: Unsupported architecture '${TARGETARCH}'"; exit 1 ;; \
     esac) && \
     dotnet restore "PatchPanda.Web/PatchPanda.Web.csproj" \
@@ -50,11 +48,11 @@ RUN export DOTNET_ARCH=$(case ${TARGETARCH} in \
 # Copy remaining source code
 COPY . .
 
-# Publish the Release binary
+# Publish the Release binary with strict ARMv7 validation
 RUN export DOTNET_ARCH=$(case ${TARGETARCH} in \
     "amd64") echo "x64" ;; \
     "arm64") echo "arm64" ;; \
-    "arm") [ "${TARGETVARIANT}" = "v7" ] && echo "arm" || { echo "ERROR: Unsupported ARM variant"; exit 1; } ;; \
+    "arm") [ "${TARGETVARIANT}" = "v7" ] && echo "arm" || { echo "ERROR: Unsupported ARM variant '${TARGETVARIANT}'"; exit 1; } ;; \
     *) echo "ERROR: Unsupported architecture '${TARGETARCH}'"; exit 1 ;; \
     esac) && \
     dotnet publish "PatchPanda.Web/PatchPanda.Web.csproj" \
@@ -69,18 +67,18 @@ RUN export DOTNET_ARCH=$(case ${TARGETARCH} in \
 # ============================================================================
 FROM base AS final
 
+# Set up environment and diagnostics (Merged logic from main and your branch)
 ARG RELEASE_VERSION
 ARG ENABLE_DIAGNOSTICS=0
 ENV APP_VERSION=$RELEASE_VERSION
 ENV DOTNET_EnableDiagnostics=${ENABLE_DIAGNOSTICS}
 
-# Install Docker CLI using native Resolute repo (Resolves Go transitives in Docker CLI)
+# Install Docker CLI using Ubuntu 'resolute' repo (Critical for CVE remediation)
 USER root
 RUN mkdir -m 0755 -p /etc/apt/keyrings && \
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg && \
     chmod a+r /etc/apt/keyrings/docker.gpg && \
-    # Dynamic detection of 'resolute' ensures repo matches base image
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu resolute stable" > /etc/apt/sources.list.d/docker.list && \
     apt-get update && \
     apt-get install -y --no-install-recommends docker-ce-cli && \
     rm -rf /var/lib/apt/lists/*

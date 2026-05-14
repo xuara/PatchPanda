@@ -21,12 +21,15 @@ jobs:
     permissions:
       contents: read
       packages: write
-      id-token: write # Required for v7 attestations
+      id-token: write # Required for security attestations (v7)
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.branch || github.ref }}
+
+      - name: Lowercase repo name
+        run: echo "REPO_LC=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -50,18 +53,23 @@ jobs:
           push: true
           build-args: |
             RELEASE_VERSION=unstable-${{ github.sha }}
-          tags: ghcr.io/${{ github.repository }}:unstable
+          tags: ghcr.io/${{ env.REPO_LC }}:unstable
+          provenance: true
+          sbom: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   test-multi-arch:
     needs: build-and-push
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: read
     strategy:
+      fail-fast: false # Run all architectures even if one fails
       matrix:
-        arch: [amd64, arm64, arm/v7] # Standardized ARM naming
+        arch: [amd64, arm64, arm/v7]
     steps:
+      - name: Lowercase repo name
+        run: echo "REPO_LC=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -74,6 +82,10 @@ jobs:
 
       - name: Test image on ${{ matrix.arch }}
         run: |
-          docker run --rm --platform linux/${{ matrix.arch }} \
-            ghcr.io/${{ github.repository }}:unstable \
-            dotnet --version
+          set -e
+          echo "Starting smoke test for ${{ matrix.arch }}..."
+          # We use a 3-minute timeout to allow slow arm/v7 emulation to boot fully.
+          # Exit code 124 means the timeout hit, which confirms the app stayed up.
+          timeout 180s docker run --rm --platform linux/${{ matrix.arch }} \
+            ghcr.io/${{ env.REPO_LC }}:unstable || [ $? -eq 124 ]
+          echo "Successfully verified image execution for ${{ matrix.arch }}"
