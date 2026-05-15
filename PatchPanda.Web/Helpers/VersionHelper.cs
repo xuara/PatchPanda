@@ -8,12 +8,12 @@ internal static class VersionHelper
     {
         string regex = "^";
 
-        if (version.Contains("@", StringComparison.Ordinal))
+        if (version.Contains('@'))
         {
             var atSplit = version.Split('@');
             regex += Regex.Escape(atSplit[0]) + "@";
         }
-        else if (version.StartsWith("v", StringComparison.Ordinal))
+        else if (version.StartsWith('v'))
             regex += "v";
 
         string cleanedVersion = version.TrimStart('v');
@@ -31,7 +31,7 @@ internal static class VersionHelper
 
         foreach (var dash in dashSplit[1..])
         {
-            if (dash.StartsWith("r", StringComparison.Ordinal) && dash.Length > 1)
+            if (dash.StartsWith('r') && dash.Length > 1)
             {
                 regex += "-r\\d+";
                 continue;
@@ -131,10 +131,10 @@ internal static class VersionHelper
         string cleanedVersion1 = version1.TrimStart('v');
         string cleanedVersion2 = version2.TrimStart('v');
 
-        if (cleanedVersion1.Contains("@", StringComparison.Ordinal))
+        if (cleanedVersion1.Contains('.'))
             cleanedVersion1 = cleanedVersion1.Split('@')[1];
 
-        if (cleanedVersion2.Contains("@", StringComparison.Ordinal))
+        if (cleanedVersion2.Contains('.'))
             cleanedVersion2 = cleanedVersion2.Split('@')[1];
 
         var numbers1 = Regex.Matches(cleanedVersion1, @"\d+");
