@@ -66,7 +66,7 @@ FROM base AS final
 
 ARG RELEASE_VERSION
 ARG ENABLE_DIAGNOSTICS=0
-ENV APP_VERSION=$RELEASE_VERSION
+ENV AppVersion=$RELEASE_VERSION
 ENV DOTNET_EnableDiagnostics=${ENABLE_DIAGNOSTICS}
 
 # Elevate to configure system tools and directories

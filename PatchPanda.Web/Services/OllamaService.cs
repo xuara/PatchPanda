@@ -23,8 +23,8 @@ public class OllamaService : IAiService
         IHttpClientFactory httpClientFactory
     )
     {
-        var endpoint = config[Constants.VariableKeys.OLLAMA_URL];
-        var model = config[Constants.VariableKeys.OLLAMA_MODEL];
+        var endpoint = config[VariableKeys.OllamaUrl];
+        var model = config[VariableKeys.OllamaModel];
 
         _endpoint = endpoint;
         _model = model;
@@ -36,13 +36,13 @@ public class OllamaService : IAiService
         {
             _logger.LogWarning(
                 "OllamaService not initialized because either {EndpointKey} or {ModelKey} were not configured.",
-                Constants.VariableKeys.OLLAMA_URL,
-                Constants.VariableKeys.OLLAMA_MODEL
+                VariableKeys.OllamaUrl,
+                VariableKeys.OllamaModel
             );
             return;
         }
 
-        var contextSize = config[Constants.VariableKeys.OLLAMA_NUM_CTX];
+        var contextSize = config[VariableKeys.OllamaNumCtx];
 
         if (contextSize is not null && int.TryParse(contextSize, out var contextSizeInt))
             _contextSize = contextSizeInt;

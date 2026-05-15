@@ -23,8 +23,8 @@ public class VersionService : IVersionService
         _logger = logger;
         _configuration = configuration;
 
-        Username = _configuration["GITHUB_USERNAME"];
-        Password = _configuration["GITHUB_PASSWORD"];
+        Username = _configuration["GithubUsername"];
+        Password = _configuration["GithubPassword"];
 
         if (Username is null || Password is null)
             _logger.LogWarning(
@@ -168,7 +168,7 @@ public class VersionService : IVersionService
             var securityScanningEnabled =
                 (
                     await db.AppSettings.FirstOrDefaultAsync(x =>
-                        x.Key == Constants.SettingsKeys.SECURITY_SCANNING_ENABLED
+                        x.Key == SettingsKeys.SecurityScanningEnabled
                     )
                 )?.Value == "true";
 
@@ -238,7 +238,7 @@ public class VersionService : IVersionService
             if (_aiService.IsInitialized())
             {
                 SummaryResult? result = null;
-                for (int i = 1; i <= Constants.Limits.MAX_OLLAMA_ATTEMPTS; i++)
+                for (int i = 1; i <= Limits.MaxOllamaAttempts; i++)
                 {
                     result = await _aiService.SummarizeReleaseNotes(notSeenNewVersion.Body);
 
@@ -248,7 +248,7 @@ public class VersionService : IVersionService
                     _logger.LogWarning(
                         "Attempting to get summary notes from Ollama, request number {Count} out of {Max}",
                         i + 1,
-                        Constants.Limits.MAX_OLLAMA_ATTEMPTS
+                        Limits.MaxOllamaAttempts
                     );
                 }
 

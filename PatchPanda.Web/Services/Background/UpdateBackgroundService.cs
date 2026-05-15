@@ -8,7 +8,7 @@ public class UpdateBackgroundService(
     JobQueue queue
 ) : IHostedService, IDisposable
 {
-    private const int JobTimeoutSeconds = Constants.Limits.UPDATE_JOB_TIMEOUT_SECONDS;
+    private const int JobTimeoutSeconds = Limits.UpdateJobTimeoutSeconds;
     private CancellationTokenSource? _cts;
     private Task? _processingTask;
 

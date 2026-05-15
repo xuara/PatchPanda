@@ -188,7 +188,7 @@ public class UpdateService
         );
 
         if (
-            !settings.TryGetValue(Constants.SettingsKeys.AUTO_UPDATE_ENABLED, out var enabledStr)
+            !settings.TryGetValue(SettingsKeys.AutoUpdateEnabled, out var enabledStr)
             || !bool.TryParse(enabledStr, out var enabled)
             || !enabled
         )
@@ -196,7 +196,7 @@ public class UpdateService
 
         var delayHours = 0;
 
-        if (settings.TryGetValue(Constants.SettingsKeys.AUTO_UPDATE_DELAY_HOURS, out var delayStr))
+        if (settings.TryGetValue(SettingsKeys.AutoUpdateDelayHours, out var delayStr))
             int.TryParse(delayStr, out delayHours);
 
         var threshold = DateTime.Now.AddHours(-delayHours);
@@ -509,7 +509,7 @@ public class UpdateService
 
             updateSteps.Add($"Pull images for stack {stack.StackName} and restart");
 
-            if (updateSteps.Count < Constants.Limits.MINIMUM_UPDATE_STEPS)
+            if (updateSteps.Count < Limits.MinimumUpdateSteps)
             {
                 _logger.LogWarning(
                     "Did not generate a valid update plan, actually generated: {Steps}\n"
@@ -530,7 +530,7 @@ public class UpdateService
                     targetEnvLine
                 );
                 return HandleError(
-                    $"Did not generate a valid update plan. Update plan has fewer than {Constants.Limits.MINIMUM_UPDATE_STEPS} steps ({updateSteps.Count}).",
+                    $"Did not generate a valid update plan. Update plan has fewer than {Limits.MinimumUpdateSteps} steps ({updateSteps.Count}).",
                     planOnly
                 );
             }

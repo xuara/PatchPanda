@@ -15,11 +15,11 @@ public class DiscordService : IDiscordService
         ArgumentNullException.ThrowIfNull(logger);
 
         var webhookUrl = configuration.GetValue<string>(
-            Constants.VariableKeys.DISCORD_WEBHOOK_URL
+            VariableKeys.DiscordWebhookUrl
         )!;
         logger.LogInformation(
             "{WebhookKey}={WebhookUrl}",
-            Constants.VariableKeys.DISCORD_WEBHOOK_URL,
+            VariableKeys.DiscordWebhookUrl,
             webhookUrl
         );
 
@@ -30,7 +30,7 @@ public class DiscordService : IDiscordService
             _isInitialized = false;
             logger.LogInformation(
                 "{WebhookKey} configuration is missing, DiscordService is not initialized.",
-                Constants.VariableKeys.DISCORD_WEBHOOK_URL
+                VariableKeys.DiscordWebhookUrl
             );
         }
         else
@@ -88,7 +88,7 @@ public class DiscordService : IDiscordService
         var payload = new
         {
             content,
-            username = Constants.APP_NAME,
+            username = Constants.AppName,
             flags = 4
         };
         var jsonPayload = JsonSerializer.Serialize(payload);

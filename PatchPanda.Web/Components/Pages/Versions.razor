@@ -5,7 +5,7 @@
 @inject JobRegistry _jobRegistry
 @implements IDisposable
 
-<PageTitle>Versions - @Constants.APP_NAME</PageTitle>
+<PageTitle>Versions - @Constants.AppName</PageTitle>
 
 @if(_app is null)
 {
@@ -14,7 +14,7 @@
 }
 else
 {
-    <PageTitle>@_app.Name versions - @Constants.APP_NAME</PageTitle>
+    <PageTitle>@_app.Name versions - @Constants.AppName</PageTitle>
     <h4>@_app.Name</h4>
     @if(_app.MultiContainerApp is not null)
     {

@@ -28,9 +28,9 @@ public sealed partial class Program
         builder.Services.AddHostedService<VersionCheckHostedService>();
         builder.Services.AddHostedService<UpdateBackgroundService>();
 
-        var baseUrl = builder.Configuration.GetValue<string?>(Constants.VariableKeys.BASE_URL);
+        var baseUrl = builder.Configuration.GetValue<string?>(VariableKeys.BaseUrl);
 
-        Constants.BASE_URL = baseUrl?.TrimEnd('/');
+        Constants.BaseUrl = baseUrl?.TrimEnd('/');
 
 #if DEBUG
         builder.Services.AddDbContextFactory<DataContext>(CreateDebugDatabaseAtWorkingFolder);
@@ -70,14 +70,14 @@ public sealed partial class Program
 
     private static void CreateDebugDatabaseAtWorkingFolder(DbContextOptionsBuilder opt)
     {
-        opt.UseSqlite($"Data Source={Constants.DB_NAME}");
+        opt.UseSqlite($"Data Source={Constants.DbName}");
         opt.EnableSensitiveDataLogging();
     }
 
     private static void CreateDatabaseAtRoot(DbContextOptionsBuilder opt)
     {
         Directory.CreateDirectory("/app/data");
-        opt.UseSqlite($"Data Source=/app/data/{Constants.DB_NAME}");
+        opt.UseSqlite($"Data Source=/app/data/{Constants.DbName}");
     }
 
     private static async Task ValidatePortainerAccessToken(IPortainerService portainerService)

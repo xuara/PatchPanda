@@ -1,8 +1,8 @@
 ﻿namespace PatchPanda.Units;
 
-public static class Helper
+internal static class Helper
 {
-    public static AppVersion GetTestAppVersion(string githubVersion) =>
+    internal static AppVersion GetTestAppVersion(string githubVersion) =>
         new AppVersion
         {
             Body = "Testing body",
@@ -12,7 +12,7 @@ public static class Helper
             Prerelease = false
         };
 
-    public static ComposeStack GetTestStack(
+    internal static ComposeStack GetTestStack(
         string version,
         string? githubNewVersion,
         string targetImage
@@ -25,7 +25,7 @@ public static class Helper
             githubNewVersion is null ? null : VersionHelper.BuildRegexFromVersion(githubNewVersion)
         );
 
-    public static ComposeStack GetTestStack(
+    internal static ComposeStack GetTestStack(
         string version,
         string? githubNewVersion,
         string targetImage,
@@ -63,10 +63,10 @@ public static class Helper
         return stack;
     }
 
-    public static ComposeStack GetTestStack() =>
-        GetTestStack(TestData.VERSION, TestData.NEW_VERSION, TestData.IMAGE);
+    internal static ComposeStack GetTestStack() =>
+        GetTestStack(TestData.VERSION, TestData.NewVersion, TestData.IMAGE);
 
-    public static IDbContextFactory<DataContext> CreateInMemoryFactory()
+    internal static IDbContextFactory<DataContext> CreateInMemoryFactory()
     {
         var serviceProvider = new ServiceCollection()
             .AddDbContextFactory<DataContext>(options =>

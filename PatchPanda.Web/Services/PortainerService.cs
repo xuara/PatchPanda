@@ -36,18 +36,18 @@ public class PortainerService : IPortainerService
     )
     {
         _logger = logger;
-        _url = configuration.GetValue<string?>(Constants.VariableKeys.PORTAINER_URL);
-        _accessToken = configuration.GetValue<string?>(Constants.VariableKeys.PORTAINER_ACCESS_TOKEN);
-        var ignoreSsl = configuration.GetValue<bool>(Constants.VariableKeys.PORTAINER_IGNORE_SSL);
-        _username = configuration.GetValue<string?>(Constants.VariableKeys.PORTAINER_USERNAME);
-        _password = configuration.GetValue<string?>(Constants.VariableKeys.PORTAINER_PASSWORD);
-        var timeoutSeconds = Constants.Limits.PORTAINER_HTTP_TIMEOUT_SECONDS;
+        _url = configuration.GetValue<string?>(VariableKeys.PortainerUrl);
+        _accessToken = configuration.GetValue<string?>(VariableKeys.PortainerAccessToken);
+        var ignoreSsl = configuration.GetValue<bool>(VariableKeys.PortainerIgnoreSsl);
+        _username = configuration.GetValue<string?>(VariableKeys.PortainerUsername);
+        _password = configuration.GetValue<string?>(VariableKeys.PortainerPassword);
+        var timeoutSeconds = Limits.PortainerHttpTimeoutSeconds;
 
         if (!IsUrlConfigured)
         {
             logger.LogWarning(
                 "{Url} is missing. Please provide it and an authentication method if you wish to enable Portainer integration.",
-                Constants.VariableKeys.PORTAINER_URL
+                VariableKeys.PortainerUrl
             );
             return;
         }
@@ -56,9 +56,9 @@ public class PortainerService : IPortainerService
         {
             logger.LogWarning(
                 "Portainer authentication is missing. Please provide {AccessToken} or {Username} and {Password} if you wish to enable Portainer integration.",
-                Constants.VariableKeys.PORTAINER_ACCESS_TOKEN,
-                Constants.VariableKeys.PORTAINER_USERNAME,
-                Constants.VariableKeys.PORTAINER_PASSWORD
+                VariableKeys.PortainerAccessToken,
+                VariableKeys.PortainerUsername,
+                VariableKeys.PortainerPassword
             );
             return;
         }
@@ -106,7 +106,7 @@ public class PortainerService : IPortainerService
             _logger.LogWarning(
                 "Portainer access token validation failed with status {Status}. Check that {AccessToken} is a valid token.",
                 response.StatusCode,
-                Constants.VariableKeys.PORTAINER_ACCESS_TOKEN
+                VariableKeys.PortainerAccessToken
             );
             return false;
         }
@@ -115,7 +115,7 @@ public class PortainerService : IPortainerService
             _logger.LogError(
                 ex,
                 "Exception occurred while validating access token. Check that {Url} is reachable.",
-                Constants.VariableKeys.PORTAINER_URL
+                VariableKeys.PortainerUrl
             );
             return false;
         }
@@ -151,9 +151,9 @@ public class PortainerService : IPortainerService
             _logger.LogWarning(
                 "Portainer authentication failed with status {Status}. Make sure {Url}, {Username} and {Password} are set correctly.",
                 resp.StatusCode,
-                Constants.VariableKeys.PORTAINER_URL,
-                Constants.VariableKeys.PORTAINER_USERNAME,
-                Constants.VariableKeys.PORTAINER_PASSWORD
+                VariableKeys.PortainerUrl,
+                VariableKeys.PortainerUsername,
+                VariableKeys.PortainerPassword
             );
             return;
         }
@@ -196,7 +196,7 @@ public class PortainerService : IPortainerService
             _logger.LogWarning(
                 "Could not list Portainer stacks: {Status}. Check that {UrlKey} is reachable and credentials are valid",
                 resp.StatusCode,
-                Constants.VariableKeys.PORTAINER_URL
+                VariableKeys.PortainerUrl
             );
             return null;
         }
@@ -237,7 +237,7 @@ public class PortainerService : IPortainerService
             _logger.LogWarning(
                 "Could not get Portainer stack file: {Status}. Ensure {UrlKey} and credentials are valid and stack exists.",
                 fileResp.StatusCode,
-                Constants.VariableKeys.PORTAINER_URL
+                VariableKeys.PortainerUrl
             );
             return null;
         }
@@ -270,7 +270,7 @@ public class PortainerService : IPortainerService
 
         if (!putResp.IsSuccessStatusCode)
             throw new(
-                $"Could not update Portainer stack file: {putResp.StatusCode}, full response: {await putResp.Content.ReadAsStringAsync()}. Check {Constants.VariableKeys.PORTAINER_URL} and credentials"
+                $"Could not update Portainer stack file: {putResp.StatusCode}, full response: {await putResp.Content.ReadAsStringAsync()}. Check {VariableKeys.PortainerUrl} and credentials"
             );
     }
 }

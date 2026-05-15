@@ -133,11 +133,11 @@ public class UpdateServiceTests
             stack.Apps[0].NewerVersions[0]
         );
 
-        var importantTask = tasks.Steps!.FirstOrDefault(t => t.Contains("Will replace"));
+        var importantTask = tasks.Steps!.FirstOrDefault(t => t.Contains("Will replace", StringComparison.Ordinal));
 
         Assert.NotNull(importantTask);
-        Assert.Contains($"{parameterName}={stack.Apps[0].Version}", importantTask);
-        Assert.Contains($"{parameterName}={expectedVersion}", importantTask);
+        Assert.Contains($"{parameterName}={stack.Apps[0].Version}", importantTask, StringComparison.Ordinal);
+        Assert.Contains($"{parameterName}={expectedVersion}", importantTask, StringComparison.Ordinal);
 
         await using var dbCheck = await dbContextFactory.CreateDbContextAsync();
         var app = await dbCheck.Containers.Include(x => x.NewerVersions).FirstAsync();
@@ -177,7 +177,7 @@ public class UpdateServiceTests
         );
 
         Assert.NotNull(result.FailReason);
-        Assert.Contains(expectedFailReason, result.FailReason);
+        Assert.Contains(expectedFailReason, result.FailReason, StringComparison.Ordinal);
 
         await using var dbCheck = await dbContextFactory.CreateDbContextAsync();
         var app = await dbCheck.Containers.Include(x => x.NewerVersions).FirstAsync();
@@ -213,14 +213,14 @@ public class UpdateServiceTests
             stack.Apps[0].NewerVersions[0]
         );
 
-        var importantTask = tasks!.Steps!.FirstOrDefault(t => t.Contains("Will"));
+        var importantTask = tasks!.Steps!.FirstOrDefault(t => t.Contains("Will", StringComparison.Ordinal));
 
         Assert.NotNull(importantTask);
 
         Assert.NotEqual(stack.Apps[0].Version, stack.Apps[0].NewerVersions[0].VersionNumber);
 
-        Assert.Contains(stack.Apps[0].TargetImage, importantTask);
-        Assert.Contains(resultImage, importantTask);
+        Assert.Contains(stack.Apps[0].TargetImage, importantTask, StringComparison.Ordinal);
+        Assert.Contains(resultImage, importantTask, StringComparison.Ordinal);
 
         await using var dbCheck = await dbContextFactory.CreateDbContextAsync();
 
@@ -270,16 +270,17 @@ public class UpdateServiceTests
             stack.Apps[0].NewerVersions[0]
         );
 
-        var importantTask = tasks!.Steps!.FirstOrDefault(t => t.Contains("Will"));
+        var importantTask = tasks!.Steps!.FirstOrDefault(t => t.Contains("Will", StringComparison.Ordinal));
 
         Assert.NotNull(importantTask);
 
         Assert.NotEqual(stack.Apps[0].Version, stack.Apps[0].NewerVersions[0].VersionNumber);
 
-        Assert.Contains($"{parameterName}={stack.Apps[0].Version}", importantTask);
+        Assert.Contains($"{parameterName}={stack.Apps[0].Version}", importantTask, StringComparison.Ordinal);
         Assert.Contains(
             $"{parameterName}={stack.Apps[0].NewerVersions[0].VersionNumber}",
-            importantTask
+            importantTask,
+            StringComparison.Ordinal
         );
 
         await using var dbCheck = await dbContextFactory.CreateDbContextAsync();
@@ -321,22 +322,22 @@ public class UpdateServiceTests
 
         await GenericTestEnvVersion(
             Helper.GetTestStack("v2.2.3", "v2.3.0", "ghcr.io/immich-app/immich-server:v2.2.3"),
-            "ghcr.io/immich-app/immich-server:${IMMICH_VERSION:-release}",
-            "IMMICH_VERSION"
+            "ghcr.io/immich-app/immich-server:${ImmichVersion:-release}",
+            "ImmichVersion"
         );
     }
 
     [Fact]
     public async Task PortainerComposeUpdateTest()
     {
-        var stack = Helper.GetTestStack(TestData.VERSION, TestData.NEW_VERSION, TestData.IMAGE);
+        var stack = Helper.GetTestStack(TestData.VERSION, TestData.NewVersion, TestData.IMAGE);
         stack.ConfigFile = null;
         stack.PortainerManaged = true;
 
         var composeContent = $"""
             version: '3'
             services:
-              testapp:
+            testapp:
                 image: {stack.Apps[0].TargetImage}
             """;
 
@@ -377,7 +378,7 @@ public class UpdateServiceTests
             p =>
                 p.UpdateStackFileContentAsync(
                     stack.StackName,
-                    It.Is<string>(s => s.Contains(TestData.IMAGE_NEW_VERSION)),
+                    It.Is<string>(s => s.Contains(TestData.ImageNewVersion, StringComparison.Ordinal)),
                     It.IsAny<CancellationToken>()
                 ),
             Times.Once
@@ -387,13 +388,13 @@ public class UpdateServiceTests
         var app = await dbCheck.Containers.Include(x => x.NewerVersions).FirstAsync();
 
         Assert.Empty(app.NewerVersions);
-        Assert.Equal(TestData.IMAGE_NEW_VERSION, app.TargetImage);
+        Assert.Equal(TestData.ImageNewVersion, app.TargetImage);
     }
 
     [Fact]
     public async Task UpdatePropagatesToMatchingFullImage()
     {
-        var stack = Helper.GetTestStack(TestData.VERSION, TestData.NEW_VERSION, TestData.IMAGE);
+        var stack = Helper.GetTestStack(TestData.VERSION, TestData.NewVersion, TestData.IMAGE);
         string sidekick = "sidekick";
 
         var secondApp = new Container
@@ -420,7 +421,7 @@ public class UpdateServiceTests
                 $"""
                 version: '3'
                 services:
-                  testapp:
+                testapp:
                     image: {stack.Apps[0].TargetImage}
                 """
             );
@@ -460,14 +461,14 @@ public class UpdateServiceTests
         var updatedMain = apps.First(a => a.Name == stack.Apps[0].Name);
         var updatedSide = apps.First(a => a.Name == sidekick);
 
-        Assert.Equal(TestData.IMAGE_NEW_VERSION, updatedMain.TargetImage);
-        Assert.Equal(TestData.NEW_VERSION, updatedMain.Version);
+        Assert.Equal(TestData.ImageNewVersion, updatedMain.TargetImage);
+        Assert.Equal(TestData.NewVersion, updatedMain.Version);
 
         Assert.Empty(updatedMain.NewerVersions);
         Assert.Empty(updatedSide.NewerVersions);
 
-        Assert.Equal(TestData.IMAGE_NEW_VERSION, updatedSide.TargetImage);
-        Assert.Equal(TestData.NEW_VERSION, updatedSide.Version);
+        Assert.Equal(TestData.ImageNewVersion, updatedSide.TargetImage);
+        Assert.Equal(TestData.NewVersion, updatedSide.Version);
     }
 
     [Fact]
@@ -619,8 +620,8 @@ public class UpdateServiceTests
                 "^\\d+\\.\\d+\\.\\d+-r\\d+$",
                 "^v\\d+\\.\\d+\\.\\d+$"
             ),
-            "example/image:${APP_VERSION:-release}",
-            "APP_VERSION",
+            "example/image:${AppVersion:-release}",
+            "AppVersion",
             "version-1.2.4-r4"
         );
     }

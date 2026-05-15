@@ -19,10 +19,10 @@ public class VersionCheckHostedService : IHostedService, IDisposable
         _logger = logger;
         _jobRegistry = jobRegistry;
 
-        if (string.IsNullOrWhiteSpace(Constants.BASE_URL))
+        if (string.IsNullOrWhiteSpace(Constants.BaseUrl))
             _logger.LogWarning(
                 "{BaseUrlKey} was not set, therefore update URLs will not be provided.",
-                Constants.VariableKeys.BASE_URL
+                VariableKeys.BaseUrl
             );
     }
 
