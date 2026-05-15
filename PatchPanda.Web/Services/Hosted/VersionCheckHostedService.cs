@@ -1,6 +1,6 @@
 namespace PatchPanda.Web.Services.Hosted;
 
-public class VersionCheckHostedService : IHostedService, IDisposable
+internal class VersionCheckHostedService : IHostedService, IDisposable
 {
     private readonly ILogger<VersionCheckHostedService> _logger;
     private readonly JobRegistry _jobRegistry;

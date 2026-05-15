@@ -2,7 +2,7 @@ using PatchPanda.Web.Helpers;
 
 namespace PatchPanda.Web.Entities;
 
-public class Container : AbstractEntity
+internal class Container : AbstractEntity
 {
     public required string Name { get; set; }
 

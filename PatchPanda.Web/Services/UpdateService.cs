@@ -2,7 +2,7 @@ using System.Text.RegularExpressions;
 
 namespace PatchPanda.Web.Services;
 
-public class UpdateService
+internal class UpdateService
 {
     private const int MaxRollbackAttempts = 3;
 

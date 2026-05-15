@@ -5,7 +5,7 @@
 namespace PatchPanda.Web.Migrations
 {
     /// <inheritdoc />
-    public partial class SecurityScanning : Migration
+    internal partial class SecurityScanning : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

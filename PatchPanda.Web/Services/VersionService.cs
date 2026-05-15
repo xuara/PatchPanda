@@ -3,7 +3,7 @@ using Octokit;
 
 namespace PatchPanda.Web.Services;
 
-public class VersionService : IVersionService
+internal class VersionService : IVersionService
 {
     private readonly ILogger<VersionService> _logger;
     private readonly IConfiguration _configuration;
@@ -135,8 +135,13 @@ public class VersionService : IVersionService
                 Prerelease = x.Prerelease,
                 VersionNumber = x.TagName,
                 Breaking = false,
-                Applications = targetApps
-            });
+                
+            }).ToList();
+
+            // Manually add the applications to the read-only list
+            foreach (var nv in newerVersions) {
+                nv.Applications.AddRange(targetApps);
+            }
 
         var appNewerVersions = await db
             .AppVersions.Include(x => x.Applications)

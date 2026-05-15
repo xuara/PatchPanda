@@ -1,6 +1,6 @@
 namespace PatchPanda.Web.Entities;
 
-public class UpdateAttempt : AbstractEntity
+internal class UpdateAttempt : AbstractEntity
 {
     public required int ContainerId { get; set; }
     public virtual Container Container { get; set; } = default!;

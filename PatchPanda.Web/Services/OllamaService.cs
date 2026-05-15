@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace PatchPanda.Web.Services;
 
-public class OllamaService : IAiService
+internal class OllamaService : IAiService
 {
     private static readonly JsonSerializerOptions CachedJsonSerializerOptions = new()
     {
@@ -211,7 +211,7 @@ public class OllamaService : IAiService
         );
     }
 
-    public class OllamaResult
+    internal class OllamaResult
     {
         public required string Response { get; set; }
         public string? Thinking { get; set; }

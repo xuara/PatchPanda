@@ -1,6 +1,6 @@
 namespace PatchPanda.Web.Services;
 
-public class NotificationService(
+internal class NotificationService(
     IDiscordService discordService,
     IAppriseService appriseService,
     ILogger<NotificationService> logger

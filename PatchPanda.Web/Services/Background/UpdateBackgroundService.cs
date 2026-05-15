@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace PatchPanda.Web.Services.Background;
 
-public class UpdateBackgroundService(
+internal class UpdateBackgroundService(
     IServiceScopeFactory serviceProvider,
     JobRegistry jobRegistry,
     JobQueue queue

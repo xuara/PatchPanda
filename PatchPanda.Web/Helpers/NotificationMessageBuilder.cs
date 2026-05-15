@@ -2,7 +2,7 @@ using System.Text;
 
 namespace PatchPanda.Web.Helpers;
 
-public static class NotificationMessageBuilder
+internal static class NotificationMessageBuilder
 {
     public static string BuildNewVersion(
         Container mainApp,

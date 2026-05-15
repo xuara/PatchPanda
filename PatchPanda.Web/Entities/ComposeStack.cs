@@ -1,13 +1,13 @@
 namespace PatchPanda.Web.Entities;
 
-public class ComposeStack : AbstractEntity
+internal class ComposeStack : AbstractEntity
 {
-    public required string StackName { get; set; }
+    internal required string StackName { get; set; }
 
-    public required string? ConfigFile { get; set; }
+    internal required string? ConfigFile { get; set; }
 
-    public bool PortainerManaged { get; set; }
+    internal bool PortainerManaged { get; set; }
 
-    public virtual List<Container> Apps { get; set; } = [];
-    public virtual List<UpdateAttempt> UpdateAttempts { get; set; } = [];
+    internal virtual List<Container> Apps { get; } = [];
+    internal virtual List<UpdateAttempt> UpdateAttempts { get; } = [];
 }

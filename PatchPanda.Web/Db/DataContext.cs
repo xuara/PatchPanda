@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace PatchPanda.Web.Db;
 
-public class DataContext(DbContextOptions<DataContext> options) : DbContext(options)
+internal class DataContext(DbContextOptions<DataContext> options) : DbContext(options)
 {
     public DbSet<ComposeStack> Stacks { get; set; } = default!;
 

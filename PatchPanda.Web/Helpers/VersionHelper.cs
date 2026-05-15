@@ -2,18 +2,18 @@ using System.Text.RegularExpressions;
 
 namespace PatchPanda.Web.Helpers;
 
-public static class VersionHelper
+internal static class VersionHelper
 {
     public static string BuildRegexFromVersion(string version)
     {
         string regex = "^";
 
-        if (version.Contains('@'))
+        if (version.Contains("@", StringComparison.Ordinal))
         {
             var atSplit = version.Split('@');
             regex += Regex.Escape(atSplit[0]) + "@";
         }
-        else if (version.StartsWith('v'))
+        else if (version.StartsWith("v", StringComparison.Ordinal))
             regex += "v";
 
         string cleanedVersion = version.TrimStart('v');
@@ -31,12 +31,12 @@ public static class VersionHelper
 
         foreach (var dash in dashSplit[1..])
         {
-            if (dash.StartsWith('r') && dash.Length > 1)
+            if (dash.StartsWith("r", StringComparison.Ordinal) && dash.Length > 1)
             {
                 regex += "-r\\d+";
                 continue;
             }
-            if (dash.StartsWith("ls") && dash.Length > 2)
+            if (dash.StartsWith("ls", StringComparison.Ordinal) && dash.Length > 2)
             {
                 regex += "-ls\\d+";
                 continue;
@@ -131,10 +131,10 @@ public static class VersionHelper
         string cleanedVersion1 = version1.TrimStart('v');
         string cleanedVersion2 = version2.TrimStart('v');
 
-        if (cleanedVersion1.Contains('@'))
+        if (cleanedVersion1.Contains("@", StringComparison.Ordinal))
             cleanedVersion1 = cleanedVersion1.Split('@')[1];
 
-        if (cleanedVersion2.Contains('@'))
+        if (cleanedVersion2.Contains("@", StringComparison.Ordinal))
             cleanedVersion2 = cleanedVersion2.Split('@')[1];
 
         var numbers1 = Regex.Matches(cleanedVersion1, @"\d+");

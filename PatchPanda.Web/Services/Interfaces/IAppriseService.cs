@@ -1,6 +1,6 @@
 ﻿namespace PatchPanda.Web.Services.Interfaces;
 
-public interface IAppriseService
+internal interface IAppriseService
 {
     public bool IsInitialized { get; }
 

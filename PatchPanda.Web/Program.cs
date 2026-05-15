@@ -3,7 +3,7 @@ using PatchPanda.Web.Services.Background;
 
 namespace PatchPanda.Web;
 
-public sealed partial class Program
+internal sealed partial class Program
 {
     private static async Task Main(string[] args)
     {
@@ -45,7 +45,7 @@ public sealed partial class Program
             .CreateDbContextAsync();
 
         if (dbContext.Database.IsRelational())
-            dbContext.Database.Migrate();
+            await dbContext.Database.MigrateAsync();
 
         // Configure the HTTP request pipeline.
         if (!app.Environment.IsDevelopment())

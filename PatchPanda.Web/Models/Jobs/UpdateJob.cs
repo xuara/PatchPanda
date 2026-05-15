@@ -1,6 +1,6 @@
 namespace PatchPanda.Web.Models.Jobs;
 
-public record UpdateJob(
+internal record UpdateJob(
     long Sequence,
     int ContainerId,
     int TargetVersionId,

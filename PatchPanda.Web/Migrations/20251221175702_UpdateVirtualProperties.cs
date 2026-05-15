@@ -5,7 +5,7 @@
 namespace PatchPanda.Web.Migrations
 {
     /// <inheritdoc />
-    public partial class UpdateVirtualProperties : Migration
+    internal partial class UpdateVirtualProperties : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

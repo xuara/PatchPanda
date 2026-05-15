@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace PatchPanda.Web.Services;
 
-public class AppriseService : IAppriseService
+internal class AppriseService : IAppriseService
 {
     private readonly string[] _urls;
     private readonly string? _appriseUrl;

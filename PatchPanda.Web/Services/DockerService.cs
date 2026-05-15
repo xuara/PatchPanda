@@ -5,7 +5,7 @@ using Docker.DotNet;
 
 namespace PatchPanda.Web.Services;
 
-public class DockerService
+internal class DockerService
 {
     private string DockerSocket { get; init; }
 

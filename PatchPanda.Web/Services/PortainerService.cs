@@ -5,7 +5,7 @@ using PatchPanda.Web.DTOs;
 
 namespace PatchPanda.Web.Services;
 
-public class PortainerService : IPortainerService
+internal class PortainerService : IPortainerService
 {
     private readonly HttpClient? _httpClient;
     private readonly ILogger<PortainerService> _logger;

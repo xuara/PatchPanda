@@ -38,24 +38,22 @@ internal static class Helper
             Id = 1,
             StackName = "TestStack",
             ConfigFile = "docker-compose.yml",
-            Apps =
-            [
-                new Container
-                {
-                    Id = 1,
-                    Name = "TestApp",
-                    IsSecondary = false,
-                    Regex = regex,
-                    GitHubVersionRegex = githubVersionRegex,
-                    Version = version,
-                    TargetImage = targetImage,
-                    StackId = 1,
-                    NewerVersions = [],
-                    CurrentSha = TestData.SHA,
-                    Uptime = TestData.UPTIME
-                }
-            ]
         };
+
+        stack.Apps.Add(new Container
+        {
+            Id = 1,
+            Name = "TestApp",
+            IsSecondary = false,
+            Regex = regex,
+            GitHubVersionRegex = githubVersionRegex,
+            Version = version,
+            TargetImage = targetImage,
+            StackId = 1,
+            NewerVersions = [],
+            CurrentSha = TestData.SHA,
+            Uptime = TestData.UPTIME
+        });
 
         if (githubNewVersion is not null)
             stack.Apps[0].NewerVersions.Add(GetTestAppVersion(githubNewVersion));

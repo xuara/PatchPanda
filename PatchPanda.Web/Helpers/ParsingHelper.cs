@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 
 namespace PatchPanda.Web.Helpers;
 
-public static class ParsingHelper
+internal static class ParsingHelper
 {
     public static async Task SetGitHubRepo(
         this Container container,

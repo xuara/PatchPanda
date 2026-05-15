@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace PatchPanda.Web.Services;
 
-public class DiscordService : IDiscordService
+internal class DiscordService : IDiscordService
 {
     public string? WebhookUrl { get; }
 

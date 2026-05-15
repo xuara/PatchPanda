@@ -2,7 +2,7 @@ using System.Collections.Concurrent;
 
 namespace PatchPanda.Web.Helpers;
 
-public abstract class PendingUpdate
+internal abstract class PendingUpdate
 {
     public bool IsProcessing { get; set; }
     public long Sequence { get; set; }
@@ -10,7 +10,7 @@ public abstract class PendingUpdate
     public abstract string Kind { get; }
 }
 
-public class PendingUpdateJob : PendingUpdate
+internal class PendingUpdateJob : PendingUpdate
 {
     public required int ContainerId { get; set; }
     public required int TargetVersionId { get; set; }
@@ -19,23 +19,23 @@ public class PendingUpdateJob : PendingUpdate
     public override string Kind => "Update";
 }
 
-public class PendingResetAll : PendingUpdate
+internal class PendingResetAll : PendingUpdate
 {
     public override string Kind => "ResetAll";
 }
 
-public class PendingRestartStack : PendingUpdate
+internal class PendingRestartStack : PendingUpdate
 {
     public required int StackId { get; set; }
     public override string Kind => "RestartStack";
 }
 
-public class PendingCheckForUpdatesAll : PendingUpdate
+internal class PendingCheckForUpdatesAll : PendingUpdate
 {
     public override string Kind => "CheckForUpdatesAll";
 }
 
-public class JobRegistry(JobQueue updateQueue)
+internal class JobRegistry(JobQueue updateQueue)
 {
     private readonly ConcurrentDictionary<long, PendingUpdate> _pending = new();
     private long _sequenceCounter;
