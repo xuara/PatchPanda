@@ -1,3 +1,4 @@
+using System;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
@@ -5,7 +6,7 @@ using PatchPanda.Web.DTOs;
 
 namespace PatchPanda.Web.Services;
 
-internal class PortainerService : IPortainerService
+internal class PortainerService : IPortainerService, IDisposable
 {
     private readonly HttpClient? _httpClient;
     private readonly ILogger<PortainerService> _logger;
@@ -15,6 +16,8 @@ internal class PortainerService : IPortainerService
     private readonly string? _password;
     private string? _jwt;
     private DateTime? _jwtExpiry;
+
+    public void Dispose() => _httpClient?.Dispose();
 
     public bool IsConfigured =>
         IsUrlConfigured
@@ -26,11 +29,11 @@ internal class PortainerService : IPortainerService
     public bool IsAccessTokenConfigured =>
         !string.IsNullOrWhiteSpace(_accessToken);
 
-    private bool IsUsernamePasswordConfigured => 
+    private bool IsUsernamePasswordConfigured =>
         !string.IsNullOrWhiteSpace(_username)
         && !string.IsNullOrWhiteSpace(_password);
 
-    public PortainerService(
+    internal PortainerService(
         IConfiguration configuration,
         ILogger<PortainerService> logger
     )
@@ -63,7 +66,8 @@ internal class PortainerService : IPortainerService
             return;
         }
 
-        var handler = new HttpClientHandler();
+        using var handler = new HttpClientHandler();
+        handler.CheckCertificateRevocationList = true;
 
         if (ignoreSsl)
         {
@@ -95,14 +99,14 @@ internal class PortainerService : IPortainerService
 
         try
         {
-            var response = await _httpClient.GetAsync("/api/motd", cancellationToken);
-            
+            var response = await _httpClient.GetAsync(new Uri("/api/motd", UriKind.Relative), cancellationToken);
+
             if (response.IsSuccessStatusCode)
             {
                 _logger.LogInformation("Portainer access token validation successful.");
                 return true;
             }
-            
+
             _logger.LogWarning(
                 "Portainer access token validation failed with status {Status}. Check that {AccessToken} is a valid token.",
                 response.StatusCode,
@@ -110,7 +114,7 @@ internal class PortainerService : IPortainerService
             );
             return false;
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             _logger.LogError(
                 ex,
@@ -140,9 +144,10 @@ internal class PortainerService : IPortainerService
         }
 
         var payload = JsonSerializer.Serialize(new { username = _username, password = _password });
+        using var content = new StringContent(payload, Encoding.UTF8, "application/json");
         var resp = await _httpClient.PostAsync(
-            "/api/auth",
-            new StringContent(payload, Encoding.UTF8, "application/json"),
+            new Uri("/api/auth", UriKind.Relative),
+            content,
             cancellationToken
         );
 
@@ -187,7 +192,7 @@ internal class PortainerService : IPortainerService
 
         var filters = JsonSerializer.Serialize(new { Name = stackName });
         var resp = await _httpClient.GetAsync(
-            $"/api/stacks?filters={filters}",
+            new Uri($"/api/stacks?filters={filters}", UriKind.Relative),
             cancellationToken
         );
 
@@ -228,7 +233,7 @@ internal class PortainerService : IPortainerService
             return null;
 
         var fileResp = await _httpClient!.GetAsync(
-            $"/api/stacks/{first.Id}/file?endpointId={first.EndpointId}",
+            new Uri($"/api/stacks/{first.Id}/file?endpointId={first.EndpointId}", UriKind.Relative),
             cancellationToken
         );
 
@@ -254,23 +259,22 @@ internal class PortainerService : IPortainerService
         CancellationToken cancellationToken = default
     )
     {
-        var first = await GetStack(stackName, cancellationToken);
+        var first = await GetStack(stackName, cancellationToken) ?? throw new InvalidOperationException("No such stack found.");
 
-        if (first is null)
-            throw new("No such stack found.");
 
         var payload = JsonSerializer.Serialize(
             new { stackFileContent = newFileContent, pullImage = true }
         );
-        var putResp = await _httpClient!.PutAsync(
-            $"/api/stacks/{first.Id}?endpointId={first.EndpointId}",
-            new StringContent(payload, Encoding.UTF8, "application/json"),
+        using var content = new StringContent(payload, Encoding.UTF8, "application/json");
+        using var putResp = await _httpClient!.PutAsync(
+            new Uri($"/api/stacks/{first.Id}?endpointId={first.EndpointId}", UriKind.Relative),
+            content,
             cancellationToken
         );
 
         if (!putResp.IsSuccessStatusCode)
             throw new(
-                $"Could not update Portainer stack file: {putResp.StatusCode}, full response: {await putResp.Content.ReadAsStringAsync()}. Check {VariableKeys.PortainerUrl} and credentials"
+                $"Could not update Portainer stack file: {putResp.StatusCode}, full response: {await putResp.Content.ReadAsStringAsync(cancellationToken)}. Check {VariableKeys.PortainerUrl} and credentials"
             );
     }
 }

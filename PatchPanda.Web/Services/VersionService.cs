@@ -103,7 +103,7 @@ internal class VersionService : IVersionService
         var validReleases = allReleases.Where(x =>
             (x.TagName is not null && Regex.IsMatch(x.TagName, app.GitHubVersionRegex))
             || (x.Name is not null && Regex.IsMatch(x.Name, app.GitHubVersionRegex))
-        );
+        ).ToList();
 
         using var db = _dbContextFactory.CreateDbContext();
 
@@ -135,13 +135,14 @@ internal class VersionService : IVersionService
                 Prerelease = x.Prerelease,
                 VersionNumber = x.TagName,
                 Breaking = false,
-                
+
             }).ToList();
 
-            // Manually add the applications to the read-only list
-            foreach (var nv in newerVersions) {
-                nv.Applications.AddRange(targetApps);
-            }
+        // Manually add the applications to the read-only list
+        foreach (var nv in newerVersions)
+        {
+            nv.Applications.AddRange(targetApps);
+        }
 
         var appNewerVersions = await db
             .AppVersions.Include(x => x.Applications)
@@ -229,7 +230,7 @@ internal class VersionService : IVersionService
                         }
                     }
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (ex is not OperationCanceledException)
                 {
                     _logger.LogError(
                         ex,
@@ -273,10 +274,10 @@ internal class VersionService : IVersionService
 
         _logger.LogInformation(
             "Got {Count} newer versions, newest is {Newest}. Looked for regex {Regex}, received {ValidReleaseCount} valid releases from GitHub, example tag name {TagName} and name {Name} of release.",
-            newerVersions.Count(),
+            newerVersions.Count,
             newerVersions.FirstOrDefault()?.VersionNumber ?? "None found",
             app.Regex,
-            validReleases.Count(),
+            validReleases.Count,
             validReleases.FirstOrDefault()?.TagName ?? "N/A",
             validReleases.FirstOrDefault()?.Name ?? "N/A"
         );

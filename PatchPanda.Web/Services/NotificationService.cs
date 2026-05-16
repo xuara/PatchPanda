@@ -77,7 +77,7 @@ internal class NotificationService(
                 await discordService.SendRawAsync(message);
                 success++;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 logger.LogError(ex, "Discord notification failed");
                 if (propagateExceptions)
@@ -92,7 +92,7 @@ internal class NotificationService(
                 await appriseService.SendAsync(message);
                 success++;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 logger.LogError(ex, "Apprise notification failed");
                 if (propagateExceptions)

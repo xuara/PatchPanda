@@ -2,10 +2,9 @@ using System.Text.RegularExpressions;
 
 namespace PatchPanda.Web.Services;
 
-internal class UpdateService
+internal partial class UpdateService
 {
     private const int MaxRollbackAttempts = 3;
-
     private readonly DockerService _dockerService;
     private readonly IDbContextFactory<DataContext> _dbContextFactory;
     private readonly IFileService _fileService;
@@ -15,7 +14,10 @@ internal class UpdateService
     private readonly JobRegistry _jobRegistry;
     private readonly INotificationService _notificationService;
 
-    public UpdateService(
+    [GeneratedRegex(@"\${([a-zA-Z0-9\-_]+):-[a-zA-Z0-9\-_]+}")]
+    private static partial Regex EnvVariableRegex();
+
+    internal UpdateService(
         DockerService dockerService,
         IDbContextFactory<DataContext> dbContextFactory,
         IFileService fileService,
@@ -72,13 +74,13 @@ internal class UpdateService
         }
     }
 
-    public bool IsUpdateAvailable(Container app) =>
+    internal bool IsUpdateAvailable(Container app) =>
         !app.IsSecondary
         && app.Regex is not null
         && app.GitHubVersionRegex is not null
         && app.Version is not null;
 
-    public async Task CheckAllForUpdates(CancellationToken cancellationToken = default)
+    internal async Task CheckAllForUpdates(CancellationToken cancellationToken = default)
     {
         await using var db = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
 
@@ -151,7 +153,7 @@ internal class UpdateService
 
                                 await db.SaveChangesAsync(cancellationToken);
                             }
-                            catch (Exception ex)
+                            catch (Exception ex) when (ex is not OperationCanceledException)
                             {
                                 _logger.LogWarning(ex, "Failed saving notified flags");
                             }
@@ -197,7 +199,7 @@ internal class UpdateService
         var delayHours = 0;
 
         if (settings.TryGetValue(SettingsKeys.AutoUpdateDelayHours, out var delayStr))
-            int.TryParse(delayStr, out delayHours);
+            _ = int.TryParse(delayStr, out delayHours);
 
         var threshold = DateTime.Now.AddHours(-delayHours);
 
@@ -325,7 +327,7 @@ internal class UpdateService
         return message;
     }
 
-    public async Task<UpdatePlanModel> Update(
+    internal async Task<UpdatePlanModel> Update(
         Container app,
         bool planOnly,
         AppVersion targetVersion,
@@ -385,7 +387,7 @@ internal class UpdateService
                 updateSteps.Add("Using Portainer-managed stack file for update");
             }
 
-            var matches = Regex.Matches(configFileContent, app.TargetImage).Count;
+            var matches = Regex.Count(configFileContent, app.TargetImage);
             var matchedCurrentVersionSegment = VersionHelper.ExtractVersionSegment(
                 app.Version,
                 app.Regex,
@@ -424,8 +426,8 @@ internal class UpdateService
 
             if (matches == 0) // Did not find in main config, check .env
             {
-                var mainImageVersionLine = Regex
-                    .Matches(configFileContent, "\\${([a-zA-Z0-9\\-_]+):-[a-zA-Z0-9\\-_]+}")
+                var mainImageVersionLine = EnvVariableRegex()
+                    .Matches(configFileContent)
                     .FirstOrDefault(x =>
                         configFileContent.Contains(app.TargetImage.Split(':')[0] + $":{x.Value}")
                     );
@@ -489,7 +491,7 @@ internal class UpdateService
                                     ),
                                 ];
 
-                                if (appsWithSharedEnvVersion.Any())
+                                if (appsWithSharedEnvVersion.Count > 0)
                                     updateSteps.Add(
                                         $"This update will also affect containers: {string.Join(", ", appsWithSharedEnvVersion.Select(x => x.Name))}"
                                     );
@@ -550,7 +552,7 @@ internal class UpdateService
                             cancellationToken
                         );
                     }
-                    catch (Exception ex)
+                    catch (Exception ex) when (ex is not OperationCanceledException)
                     {
                         _logger.LogError(
                             ex,
@@ -578,7 +580,7 @@ internal class UpdateService
                                 rollbackStdErr += $"\n[ROLLBACK SUCCESS]\n";
                                 break;
                             }
-                            catch (Exception rollbackException)
+                            catch (Exception rollbackException) when (rollbackException is not OperationCanceledException)
                             {
                                 rollbackStdErr +=
                                     $"\n[ROLLBACK ATTEMPT {attemptCount + 1} STDERR]\n"
@@ -841,7 +843,7 @@ internal class UpdateService
 
             throw;
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             if (!planOnly)
             {

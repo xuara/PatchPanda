@@ -407,7 +407,7 @@ internal class DockerService
                 if (!process.HasExited)
                     process.Kill(true);
             }
-            catch (Exception killException)
+            catch (Exception killException) when (killException is not OperationCanceledException)
             {
                 _logger.LogWarning(
                     killException,

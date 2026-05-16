@@ -77,7 +77,7 @@ internal class OllamaService : IAiService
             stream = false,
             options = new { num_ctx = _contextSize },
         };
-        var content = new StringContent(
+        using var content = new StringContent(
             JsonSerializer.Serialize(request),
             Encoding.UTF8,
             "application/json"
@@ -85,7 +85,7 @@ internal class OllamaService : IAiService
 
         try
         {
-            var response = await httpClient.PostAsync(_endpoint + "/api/generate", content);
+            var response = await httpClient.PostAsync(new Uri($"{_endpoint}/api/generate"), content);
             response.EnsureSuccessStatusCode();
 
             var ollamaResult = await response.Content.ReadFromJsonAsync<OllamaResult>(
@@ -99,7 +99,7 @@ internal class OllamaService : IAiService
             );
             return innerResponse;
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             _logger.LogError(ex, "There was an error while contacting the Ollama API.");
             return null;

@@ -76,7 +76,7 @@ internal class AppriseService : IAppriseService
 
         try
         {
-            var httpClient = _httpClientFactory.CreateClient();
+            using var httpClient = _httpClientFactory.CreateClient();
 
             var processedUrls = new List<string>(_urls.Length);
             for (int i = 0; i < _urls.Length; i++)
@@ -93,7 +93,7 @@ internal class AppriseService : IAppriseService
                 if (!url.Contains("emojis="))
                     additions.Add("emojis=yes");
 
-                if (additions.Any())
+                if (additions.Count > 0)
                     url += string.Join('&', additions);
 
                 processedUrls.Add(url);
@@ -101,13 +101,13 @@ internal class AppriseService : IAppriseService
             var payload = new { body = message, urls = string.Join(',', processedUrls) };
 
             var json = JsonSerializer.Serialize(payload);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            using var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            var resp = await httpClient.PostAsync(targetUrl, content, cancellationToken);
+            var resp = await httpClient.PostAsync(new Uri(targetUrl), content, cancellationToken);
 
             resp.EnsureSuccessStatusCode();
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             throw new FailedNotificationException(targetUrl, ex);
         }

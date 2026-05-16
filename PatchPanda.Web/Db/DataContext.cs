@@ -5,17 +5,17 @@ namespace PatchPanda.Web.Db;
 
 internal class DataContext(DbContextOptions<DataContext> options) : DbContext(options)
 {
-    public DbSet<ComposeStack> Stacks { get; set; } = default!;
+    internal DbSet<ComposeStack> Stacks { get; set; } = default!;
 
-    public DbSet<MultiContainerApp> MultiContainerApps { get; set; } = default!;
+    internal DbSet<MultiContainerApp> MultiContainerApps { get; set; } = default!;
 
-    public DbSet<Container> Containers { get; set; } = default!;
+    internal DbSet<Container> Containers { get; set; } = default!;
 
-    public DbSet<AppVersion> AppVersions { get; set; } = default!;
+    internal DbSet<AppVersion> AppVersions { get; set; } = default!;
 
-    public DbSet<AppSetting> AppSettings { get; set; } = default!;
+    internal DbSet<AppSetting> AppSettings { get; set; } = default!;
 
-    public DbSet<UpdateAttempt> UpdateAttempts { get; set; } = default!;
+    internal DbSet<UpdateAttempt> UpdateAttempts { get; set; } = default!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -69,11 +69,7 @@ internal class DataContext(DbContextOptions<DataContext> options) : DbContext(op
 
         var listStringConverter = new ValueConverter<List<Tuple<string, string>>?, string?>(
             v =>
-                JsonSerializer.Serialize(
-                    v,
-                    typeof(List<Tuple<string, string>>),
-                    jsonSerializerOptions
-                ),
+                JsonSerializer.Serialize<List<Tuple<string, string>>>(v!, jsonSerializerOptions),
             v =>
                 v == null
                     ? null

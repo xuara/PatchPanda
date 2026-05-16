@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using System.Globalization;
 
 namespace PatchPanda.Web.Helpers;
 
@@ -117,8 +118,8 @@ internal static class VersionHelper
 
         for (int i = 0; i < numbers1.Count; i++)
         {
-            int num1 = int.Parse(numbers1[i].Value);
-            int num2 = int.Parse(numbers2[i].Value);
+            int num1 = int.Parse(numbers1[i].Value, CultureInfo.InvariantCulture);
+            int num2 = int.Parse(numbers2[i].Value, CultureInfo.InvariantCulture);
             if (num1 != num2)
                 return false;
         }
@@ -145,8 +146,8 @@ internal static class VersionHelper
 
         for (int i = 0; i < numbers1.Count; i++)
         {
-            int num1 = int.Parse(numbers1[i].Value);
-            int num2 = int.Parse(numbers2[i].Value);
+            int num1 = int.Parse(numbers1[i].Value, CultureInfo.InvariantCulture);
+            int num2 = int.Parse(numbers2[i].Value, CultureInfo.InvariantCulture);
 
             if (num1 > num2)
                 return true;

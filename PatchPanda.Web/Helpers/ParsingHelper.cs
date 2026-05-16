@@ -3,9 +3,18 @@ using System.Text.RegularExpressions;
 
 namespace PatchPanda.Web.Helpers;
 
-internal static class ParsingHelper
+internal static partial class ParsingHelper
 {
-    public static async Task SetGitHubRepo(
+    [GeneratedRegex(@"https://github.com\/([a-zA-Z0-9_.-]+)\/([a-zA-Z0-9_.-]+)")]
+    private static partial Regex GitHubUrlRegex();
+
+    [GeneratedRegex(@"ghcr.io\/([a-zA-Z0-9_.-]+)\/([a-zA-Z0-9_.-]+)")]
+    private static partial Regex GhcrUrlRegex();
+
+    [GeneratedRegex(@"([a-zA-Z0-9_.-]+)\/([a-zA-Z0-9_.-]+):")]
+    private static partial Regex ImageUrlRegex();
+
+    internal static async Task SetGitHubRepo(
         this Container container,
         ContainerListResponse response,
         IVersionService versionService,
@@ -19,17 +28,11 @@ internal static class ParsingHelper
 
         var fullResponse = JsonSerializer.Serialize(response);
 
-        var githubMatches = Regex.Matches(
-            fullResponse,
-            @"https://github.com\/([a-zA-Z0-9_.-]+)\/([a-zA-Z0-9_.-]+)"
-        );
+        var githubMatches = GitHubUrlRegex().Matches(fullResponse);
 
-        var ghcrMatches = Regex.Matches(
-            fullResponse,
-            @"ghcr.io\/([a-zA-Z0-9_.-]+)\/([a-zA-Z0-9_.-]+)"
-        );
+        var ghcrMatches = GhcrUrlRegex().Matches(fullResponse);
 
-        var imageMatches = Regex.Matches(response.Image, @"([a-zA-Z0-9_.-]+)\/([a-zA-Z0-9_.-]+):");
+        var imageMatches = ImageUrlRegex().Matches(response.Image);
 
         Dictionary<Tuple<string, string>, IReadOnlyList<Octokit.Release>> versionCounts = [];
 
@@ -50,9 +53,9 @@ internal static class ParsingHelper
 
                 versionCounts.Add(match, versions);
             }
-            catch
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                logger.LogInformation("Failed to get versions for combination {Match}", match);
+                logger.LogInformation(ex, "Failed to get versions for combination {Match}", match);
             }
         }
 
@@ -65,7 +68,7 @@ internal static class ParsingHelper
             )
             .ToDictionary();
 
-        if (versionCounts.Any())
+        if (versionCounts.Count > 0)
         {
             var bestChoice = versionCounts
                 .OrderByDescending(x =>
@@ -75,16 +78,13 @@ internal static class ParsingHelper
                 .First();
 
             container.GitHubRepo = bestChoice.Key;
-            container.GitHubVersionRegex = bestChoice.Value.Any()
-                ? VersionHelper.BuildRegexFromVersion(bestChoice.Value.First().TagName)
+            container.GitHubVersionRegex = bestChoice.Value.Count > 0
+                ? VersionHelper.BuildRegexFromVersion(bestChoice.Value[0].TagName)
                 : null;
 
             if (versionCounts.Count > 1)
             {
-                container.SecondaryGitHubRepos = versionCounts
-                    .Where(x => x.Key != bestChoice.Key)
-                    .Select(x => x.Key)
-                    .ToList();
+                container.SecondaryGitHubRepos = [.. versionCounts.Where(x => x.Key != bestChoice.Key).Select(x => x.Key)];
             }
         }
     }

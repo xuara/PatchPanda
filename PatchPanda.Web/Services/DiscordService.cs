@@ -9,7 +9,7 @@ internal class DiscordService : IDiscordService
 
     private readonly bool _isInitialized;
 
-    public DiscordService(IConfiguration configuration, ILogger<DiscordService> logger)
+    internal DiscordService(IConfiguration configuration, ILogger<DiscordService> logger)
     {
         ArgumentNullException.ThrowIfNull(configuration);
         ArgumentNullException.ThrowIfNull(logger);
@@ -76,7 +76,7 @@ internal class DiscordService : IDiscordService
                 await Task.Delay(1000);
             }
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             throw new FailedNotificationException(WebhookUrl, ex);
         }
@@ -92,8 +92,8 @@ internal class DiscordService : IDiscordService
             flags = 4
         };
         var jsonPayload = JsonSerializer.Serialize(payload);
-        var httpContent = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
-        var response = await httpClient.PostAsync(WebhookUrl, httpContent);
+        using var httpContent = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+        using var response = await httpClient.PostAsync(new Uri(WebhookUrl!), httpContent);
         response.EnsureSuccessStatusCode();
     }
 }

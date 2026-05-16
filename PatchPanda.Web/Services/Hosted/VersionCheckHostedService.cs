@@ -75,7 +75,7 @@ internal class VersionCheckHostedService : IHostedService, IDisposable
                     "Skipping CheckForUpdatesAll enqueue because one is already queued or processing."
                 );
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             _logger.LogError(ex, "Error while enqueueing scheduled version check jobs");
         }
