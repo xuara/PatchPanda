@@ -16,6 +16,8 @@
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
       <_Parameter1>PatchPanda.Units</_Parameter1>
     </AssemblyAttribute>
+    <InternalsVisibleTo Include="PatchPanda.Units" />
+    <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
     <PackageReference Include="Devity.Blazor" Version="2025.12.21.1700" />
     <PackageReference Include="Devity.Extensions" Version="2025.12.21.1700" />
     <PackageReference Include="Docker.DotNet" Version="3.125.15" />
