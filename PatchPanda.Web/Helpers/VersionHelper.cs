@@ -132,30 +132,30 @@ internal static class VersionHelper
         string cleanedVersion1 = version1.TrimStart('v');
         string cleanedVersion2 = version2.TrimStart('v');
 
-        if (cleanedVersion1.Contains('.'))
+        // Only split if the character actually exists to avoid IndexOutOfRangeException
+        if (cleanedVersion1.Contains('@'))
             cleanedVersion1 = cleanedVersion1.Split('@')[1];
 
-        if (cleanedVersion2.Contains('.'))
+        if (cleanedVersion2.Contains('@'))
             cleanedVersion2 = cleanedVersion2.Split('@')[1];
 
         var numbers1 = Regex.Matches(cleanedVersion1, @"\d+");
         var numbers2 = Regex.Matches(cleanedVersion2, @"\d+");
 
-        if (numbers1.Count != numbers2.Count)
-            return false;
+        // Compare segments up to the shortest version length to handle 1.0 vs 1.0.1
+        int count = Math.Min(numbers1.Count, numbers2.Count);
 
-        for (int i = 0; i < numbers1.Count; i++)
+        for (int i = 0; i < count; i++)
         {
             int num1 = int.Parse(numbers1[i].Value, CultureInfo.InvariantCulture);
             int num2 = int.Parse(numbers2[i].Value, CultureInfo.InvariantCulture);
 
-            if (num1 > num2)
-                return true;
-            else if (num1 < num2)
-                return false;
+            if (num1 > num2) return true;
+            if (num1 < num2) return false;
         }
 
-        return false;
+        // If all existing segments match, the one with MORE segments is newer (e.g., 1.0.1 > 1.0)
+        return numbers1.Count > numbers2.Count;
     }
 
     public static int NewerComparison(string version1, string version2)

@@ -5,7 +5,7 @@ namespace PatchPanda.Web.Db;
 
 internal class DataContext(DbContextOptions<DataContext> options) : DbContext(options)
 {
-    internal DbSet<ComposeStack> Stacks { get; set; } = default!;
+    public DbSet<ComposeStack> Stacks { get; set; } = default!;
 
     internal DbSet<MultiContainerApp> MultiContainerApps { get; set; } = default!;
 
@@ -93,5 +93,12 @@ internal class DataContext(DbContextOptions<DataContext> options) : DbContext(op
             .Entity<Container>()
             .Property(x => x.SecondaryGitHubRepos)
             .HasConversion(listStringConverter);
+
+        modelBuilder.Entity<AppSetting>().HasKey(x => x.Key);
+        modelBuilder.Entity<AppVersion>().HasKey(x => x.Id);
+        modelBuilder.Entity<ComposeStack>().HasKey(x => x.Id);
+        modelBuilder.Entity<MultiContainerApp>().HasKey(x => x.Id);
+        modelBuilder.Entity<UpdateAttempt>().HasKey(x => x.Id);
+        modelBuilder.Entity<Container>().HasKey(x => x.Id);
     }
 }

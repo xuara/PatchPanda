@@ -1,9 +1,11 @@
 ﻿namespace PatchPanda.Units;
 
+using Microsoft.EntityFrameworkCore.Storage;
+
 internal static class Helper
 {
     internal static AppVersion GetTestAppVersion(string githubVersion) =>
-        new AppVersion
+        new()
         {
             Body = "Testing body",
             Breaking = false,
@@ -37,7 +39,7 @@ internal static class Helper
         {
             Id = 1,
             StackName = "TestStack",
-            ConfigFile = "docker-compose.yml",
+            ConfigFile = "/app/docker-compose.yml",
         };
 
         stack.Apps.Add(new Container
@@ -66,12 +68,16 @@ internal static class Helper
 
     internal static IDbContextFactory<DataContext> CreateInMemoryFactory()
     {
-        var serviceProvider = new ServiceCollection()
-            .AddDbContextFactory<DataContext>(options =>
-                options.UseInMemoryDatabase(Guid.NewGuid().ToString())
-            )
-            .BuildServiceProvider();
+        var databaseName = Guid.NewGuid().ToString();
 
-        return serviceProvider.GetRequiredService<IDbContextFactory<DataContext>>();
+        var options = new DbContextOptionsBuilder<DataContext>()
+            .UseInMemoryDatabase(databaseName).Options;
+
+        return new SimpleDbContextFactory(options);
+    }
+
+    internal sealed class SimpleDbContextFactory(DbContextOptions<DataContext> options) : IDbContextFactory<DataContext>
+    {
+        public DataContext CreateDbContext() => new(options);
     }
 }

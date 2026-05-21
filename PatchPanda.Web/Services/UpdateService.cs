@@ -355,17 +355,13 @@ internal partial class UpdateService
             ArgumentNullException.ThrowIfNull(app.GitHubVersionRegex);
             ArgumentNullException.ThrowIfNull(app.Version);
 
-            await using var db = await _dbContextFactory.CreateDbContextAsync(
-                CancellationToken.None
-            );
+            await using var db = await _dbContextFactory.CreateDbContextAsync(CancellationToken.None);
+
             var stack = await db.Stacks.FirstAsync(x => x.Id == app.StackId, CancellationToken.None);
             var configPath = stack.ConfigFile;
 
             if (configPath is null && (!stack.PortainerManaged || !_portainerService.IsConfigured))
-                return HandleError(
-                    "Did not get config path and Portainer integration is disabled.",
-                    planOnly
-                );
+                return HandleError("Did not get config path and Portainer integration is disabled.", planOnly);
 
             string? configFileContent;
 
@@ -373,6 +369,9 @@ internal partial class UpdateService
             {
                 updateSteps.Add($"In folder: {configPath}");
                 configFileContent = _fileService.ReadAllText(configPath);
+
+                if (configFileContent is null)
+                    return HandleError($"Failed to read config file at: {configPath}", planOnly);
             }
             else
             {
@@ -447,9 +446,7 @@ internal partial class UpdateService
                     }
 
                     envFile = Path.Combine(
-                        Path.GetDirectoryName(configPath) ?? string.Empty,
-                        ".env"
-                    );
+                        Path.GetDirectoryName(configPath) ?? string.Empty, ".env");
 
                     if (_fileService.Exists(envFile))
                     {
@@ -457,23 +454,14 @@ internal partial class UpdateService
                         var envVarRegex = Regex.Escape(mainImageVersionLine.Groups[1].Value);
                         var targetImageSecondPortion = app.TargetImage.Split(':')[1];
                         currentEnvLine = Regex
-                            .Match(
-                                envFileContent,
-                                $"{envVarRegex}={Regex.Escape(targetImageSecondPortion)}"
-                            )
-                            .Value;
+                            .Match(envFileContent, $"{envVarRegex}={Regex.Escape(app.Version)}").Value;
 
                         if (!string.IsNullOrWhiteSpace(currentEnvLine))
                         {
-                            targetEnvLine = currentEnvLine.Replace(
-                                targetImageSecondPortion,
-                                newVersion
-                            );
+                            targetEnvLine = currentEnvLine.Replace(app.Version, newVersion);
 
                             updateSteps.Add($"Looking at {envFile} .env file");
-                            updateSteps.Add(
-                                $"Will replace {currentEnvLine} with {targetEnvLine} in the env file"
-                            );
+                            updateSteps.Add($"Will replace {currentEnvLine} with {targetEnvLine} in the env file");
 
                             if (app.MultiContainerAppId is not null)
                             {
@@ -504,9 +492,7 @@ internal partial class UpdateService
             {
                 resultingImage = app.TargetImage.Split(':')[0] + ':' + newVersion;
 
-                updateSteps.Add(
-                    $"Will replace {matches} occurrences of {app.TargetImage} and replace them with {resultingImage}"
-                );
+                updateSteps.Add($"Will replace {matches} occurrences of {app.TargetImage} and replace them with {resultingImage}");
             }
 
             updateSteps.Add($"Pull images for stack {stack.StackName} and restart");
