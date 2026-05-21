@@ -11,17 +11,47 @@ internal sealed partial class Program
 
         // Add services to the container.
         builder.Services.AddRazorComponents().AddInteractiveServerComponents();
-
         builder.Services.AddHttpClient();
         builder.Services.AddControllers();
         builder.Services.AddSingleton<DockerService>();
-        builder.Services.AddSingleton<IPortainerService, PortainerService>();
+
+        builder.Services.AddSingleton<IPortainerService>(sp =>
+            new PortainerService(
+                sp.GetRequiredService<IConfiguration>(),
+                sp.GetRequiredService<ILogger<PortainerService>>()
+            ));
+
         builder.Services.AddSingleton<IVersionService, VersionService>();
-        builder.Services.AddSingleton<IDiscordService, DiscordService>();
+
+        builder.Services.AddSingleton<IDiscordService>(sp =>
+            new DiscordService(
+                sp.GetRequiredService<IConfiguration>(),
+                sp.GetRequiredService<ILogger<DiscordService>>()
+            ));
+
         builder.Services.AddSingleton<IAppriseService, AppriseService>();
-        builder.Services.AddSingleton<INotificationService, NotificationService>();
+
+        builder.Services.AddSingleton<INotificationService>(sp =>
+            new NotificationService(
+                sp.GetRequiredService<IDiscordService>(),
+                sp.GetRequiredService<IAppriseService>(),
+                sp.GetRequiredService<ILogger<NotificationService>>()
+            ));
+
         builder.Services.AddSingleton<IAiService, OllamaService>();
-        builder.Services.AddSingleton<UpdateService>();
+
+        builder.Services.AddSingleton<UpdateService>(sp =>
+            new UpdateService(
+                sp.GetRequiredService<DockerService>(),
+                sp.GetRequiredService<IDbContextFactory<DataContext>>(),
+                sp.GetRequiredService<IFileService>(),
+                sp.GetRequiredService<ILogger<UpdateService>>(),
+                sp.GetRequiredService<IPortainerService>(),
+                sp.GetRequiredService<IVersionService>(),
+                sp.GetRequiredService<JobRegistry>(),
+                sp.GetRequiredService<INotificationService>()
+            ));
+
         builder.Services.AddSingleton<IFileService, SystemFileService>();
         builder.Services.AddSingleton<JobRegistry>();
         builder.Services.AddSingleton<JobQueue>();
