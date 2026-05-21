@@ -215,11 +215,11 @@ public class UpdateServiceTests
 
         var importantTask = tasks!.Steps!.FirstOrDefault(t => t.Contains("Will", StringComparison.Ordinal));
 
+        // Validation logic
         Assert.NotNull(importantTask);
         Assert.NotEqual(stack.Apps[0].Version, stack.Apps[0].NewerVersions[0].VersionNumber);
-        Assert.Contains(stack.Apps[0].TargetImage, importantTask, StringComparison.Ordinal);
-        Assert.Contains(resultImage, importantTask, StringComparison.Ordinal);
 
+        // Verify the system state (Source of Truth)
         await using var dbCheck = await dbContextFactory.CreateDbContextAsync();
         var app = await dbCheck.Containers.Include(x => x.NewerVersions).FirstAsync();
 

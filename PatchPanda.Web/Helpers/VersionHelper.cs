@@ -36,39 +36,35 @@ internal static partial class VersionHelper
             }
             else
             {
-                // Pin the explicit major/minor structural digits (e.g., "1" and "10") so it ignores older branches
+                // Pin the explicit major/minor structural digits
                 digitRegexes.Add(Regex.Escape(periodSplit[i]));
             }
         }
 
+        // Append the joined regex only once
         regex += string.Join(@"\.", digitRegexes);
 
-        regex += string.Join(@"\.", digitRegexes);
+        var lastSegment = periodSplit[^1];
+        var dashSplit = lastSegment.Split('-');
 
-        regex += string.Join(@"\.", digitRegexes);
-
-        var dashSplit = periodSplit[^1].Split('-');
-
-        foreach (var dash in dashSplit[1..])
+        // Handle dash suffixes (e.g., -ls123, -r1)
+        foreach (var dash in dashSplit.Skip(1))
         {
             if (dash.StartsWith('r') && dash.Length > 1)
             {
                 regex += @"-r\d+";
-                continue;
             }
-            if (dash.StartsWith("ls", StringComparison.Ordinal) && dash.Length > 2)
+            else if (dash.StartsWith("ls", StringComparison.Ordinal) && dash.Length > 2)
             {
                 regex += @"-ls\d+";
-                continue;
             }
             else
             {
-                regex += "-" + dash;
+                regex += "-" + Regex.Escape(dash);
             }
         }
 
         regex += "$";
-
         return regex;
     }
 

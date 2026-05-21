@@ -6,11 +6,13 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace PatchPanda.Web.Migrations
 {
     /// <inheritdoc />
-    public partial class AddSecurityUpdateEntities : Migration
+    internal partial class AddSecurityUpdateEntities : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            ArgumentNullException.ThrowIfNull(migrationBuilder);
+
             migrationBuilder.DropColumn(
                 name: "AIBreaking",
                 table: "AppVersions");
@@ -67,6 +69,8 @@ namespace PatchPanda.Web.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            ArgumentNullException.ThrowIfNull(migrationBuilder);
+
             migrationBuilder.AddColumn<bool>(
                 name: "AIBreaking",
                 table: "AppVersions",
