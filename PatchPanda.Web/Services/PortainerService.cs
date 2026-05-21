@@ -39,19 +39,16 @@ internal class PortainerService : IPortainerService, IDisposable
     )
     {
         _logger = logger;
-        _url = configuration.GetValue<string?>(VariableKeys.PortainerUrl);
-        _accessToken = configuration.GetValue<string?>(VariableKeys.PortainerAccessToken);
-        var ignoreSsl = configuration.GetValue<bool>(VariableKeys.PortainerIgnoreSsl);
-        _username = configuration.GetValue<string?>(VariableKeys.PortainerUsername);
-        _password = configuration.GetValue<string?>(VariableKeys.PortainerPassword);
+        _url = configuration.GetValue<string?>(VariableKeys.PortainerUrl) ?? Environment.GetEnvironmentVariable("PORTAINER_URL");
+        _accessToken = configuration.GetValue<string?>(VariableKeys.PortainerAccessToken) ?? Environment.GetEnvironmentVariable("PORTAINER_ACCESS_TOKEN");
+        var ignoreSsl = configuration.GetValue<bool>(VariableKeys.PortainerIgnoreSsl) || (Environment.GetEnvironmentVariable("PORTAINER_IGNORE_SSL") == "true");
+        _username = configuration.GetValue<string?>(VariableKeys.PortainerUsername) ?? Environment.GetEnvironmentVariable("PORTAINER_USERNAME");
+        _password = configuration.GetValue<string?>(VariableKeys.PortainerPassword) ?? Environment.GetEnvironmentVariable("PORTAINER_PASSWORD");
         var timeoutSeconds = Limits.PortainerHttpTimeoutSeconds;
 
         if (!IsUrlConfigured)
         {
-            logger.LogWarning(
-                "{Url} is missing. Please provide it and an authentication method if you wish to enable Portainer integration.",
-                VariableKeys.PortainerUrl
-            );
+            logger.LogWarning("{Url} is missing. Please provide it and an authentication method if you wish to enable Portainer integration.", VariableKeys.PortainerUrl);
             return;
         }
 

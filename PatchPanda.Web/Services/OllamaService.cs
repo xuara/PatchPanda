@@ -17,43 +17,30 @@ internal class OllamaService : IAiService
     private readonly ILogger<OllamaService> _logger;
     private readonly bool _isInitialized;
 
-    public OllamaService(
-        IConfiguration config,
-        ILogger<OllamaService> logger,
-        IHttpClientFactory httpClientFactory
-    )
+    public OllamaService(IConfiguration config, ILogger<OllamaService> logger, IHttpClientFactory httpClientFactory)
     {
-        var endpoint = config[VariableKeys.OllamaUrl];
-        var model = config[VariableKeys.OllamaModel];
+        // Check Config first, fallback to Environment Variable
+        var endpoint = config[VariableKeys.OllamaUrl] ?? Environment.GetEnvironmentVariable("OLLAMA_URL");
+        var model = config[VariableKeys.OllamaModel] ?? Environment.GetEnvironmentVariable("OLLAMA_MODEL");
+        var contextSize = config[VariableKeys.OllamaNumCtx] ?? Environment.GetEnvironmentVariable("OLLAMA_NUM_CTX");
 
         _endpoint = endpoint;
         _model = model;
         _logger = logger;
-
         _httpClientFactory = httpClientFactory;
 
         if (string.IsNullOrWhiteSpace(endpoint) || string.IsNullOrWhiteSpace(model))
         {
-            _logger.LogWarning(
-                "OllamaService not initialized because either {EndpointKey} or {ModelKey} were not configured.",
-                VariableKeys.OllamaUrl,
-                VariableKeys.OllamaModel
-            );
+            _logger.LogWarning("OllamaService not initialized: {EndpointKey} or {ModelKey} missing.",
+                VariableKeys.OllamaUrl, VariableKeys.OllamaModel);
             return;
         }
-
-        var contextSize = config[VariableKeys.OllamaNumCtx];
 
         if (contextSize is not null && int.TryParse(contextSize, out var contextSizeInt))
             _contextSize = contextSizeInt;
 
         _isInitialized = true;
-        _logger.LogInformation(
-            "OllamaService configured with endpoint {Endpoint}, model {Model} and context size {ContextSize}.",
-            endpoint,
-            model,
-            _contextSize
-        );
+        _logger.LogInformation("OllamaService configured with endpoint {Endpoint}, model {Model}.", endpoint, model);
     }
 
     public bool IsInitialized() => _isInitialized;

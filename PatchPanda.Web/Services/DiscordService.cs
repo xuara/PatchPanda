@@ -14,24 +14,16 @@ internal class DiscordService : IDiscordService
         ArgumentNullException.ThrowIfNull(configuration);
         ArgumentNullException.ThrowIfNull(logger);
 
-        var webhookUrl = configuration.GetValue<string>(
-            VariableKeys.DiscordWebhookUrl
-        )!;
-        logger.LogInformation(
-            "{WebhookKey}={WebhookUrl}",
-            VariableKeys.DiscordWebhookUrl,
-            webhookUrl
-        );
+        var webhookUrl = configuration.GetValue<string>(VariableKeys.DiscordWebhookUrl) ?? Environment.GetEnvironmentVariable("DISCORD_WEBHOOK_URL");
+
+        logger.LogInformation("{WebhookKey}={WebhookUrl}", VariableKeys.DiscordWebhookUrl, webhookUrl);
 
         WebhookUrl = webhookUrl;
 
         if (string.IsNullOrWhiteSpace(webhookUrl))
         {
             _isInitialized = false;
-            logger.LogInformation(
-                "{WebhookKey} configuration is missing, DiscordService is not initialized.",
-                VariableKeys.DiscordWebhookUrl
-            );
+            logger.LogInformation("{WebhookKey} configuration is missing, DiscordService is not initialized.", VariableKeys.DiscordWebhookUrl);
         }
         else
         {

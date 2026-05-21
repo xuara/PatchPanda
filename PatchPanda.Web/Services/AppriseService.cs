@@ -25,27 +25,19 @@ internal class AppriseService : IAppriseService
         _httpClientFactory = httpClientFactory;
         _urls = [];
 
-        var appriseApiUrl = configuration.GetValue<string?>(VariableKeys.AppriseApiUrl);
+        var appriseApiUrl = configuration.GetValue<string?>(VariableKeys.AppriseApiUrl) ?? Environment.GetEnvironmentVariable("APPRISE_API_URL");
 
         if (string.IsNullOrWhiteSpace(appriseApiUrl))
         {
-            _logger.LogInformation(
-                "{NotificationUrlsKey} variable is missing, AppriseService is not initialized.",
-                VariableKeys.AppriseApiUrl
-            );
+            _logger.LogInformation("{NotificationUrlsKey} variable is missing, AppriseService is not initialized.", VariableKeys.AppriseApiUrl);
             return;
         }
 
-        var notificationUrlsRaw = configuration.GetValue<string?>(
-            VariableKeys.AppriseNotificationUrls
-        );
+        var notificationUrlsRaw = configuration.GetValue<string?>(VariableKeys.AppriseNotificationUrls) ?? Environment.GetEnvironmentVariable("APPRISE_NOTIFICATION_URLS");
 
         if (string.IsNullOrWhiteSpace(notificationUrlsRaw))
         {
-            _logger.LogInformation(
-                "{NotificationUrlsKey} variable is missing, AppriseService is not initialized.",
-                VariableKeys.AppriseNotificationUrls
-            );
+            _logger.LogInformation("{NotificationUrlsKey} variable is missing, AppriseService is not initialized.", VariableKeys.AppriseNotificationUrls);
             return;
         }
 

@@ -23,13 +23,11 @@ internal class VersionService : IVersionService
         _logger = logger;
         _configuration = configuration;
 
-        Username = _configuration["GithubUsername"];
-        Password = _configuration["GithubPassword"];
+        Username = _configuration["GithubUsername"] ?? Environment.GetEnvironmentVariable("GITHUB_USERNAME");
+        Password = _configuration["GithubPassword"] ?? Environment.GetEnvironmentVariable("GITHUB_PASSWORD"); ;
 
         if (Username is null || Password is null)
-            _logger.LogWarning(
-                "GitHub credentials are not set in environment variables. You may run into rate limiting issues."
-            );
+            _logger.LogWarning("GitHub credentials are not set in environment variables. You may run into rate limiting issues.");
 
         _dbContextFactory = dbContextFactory;
         _aiService = aiService;
@@ -276,7 +274,7 @@ internal class VersionService : IVersionService
             "Got {Count} newer versions, newest is {Newest}. Looked for regex {Regex}, received {ValidReleaseCount} valid releases from GitHub, example tag name {TagName} and name {Name} of release.",
             newerVersions.Count,
             newerVersions.FirstOrDefault()?.VersionNumber ?? "None found",
-            app.Regex,
+            app.GitHubVersionRegex,
             validReleases.Count,
             validReleases.FirstOrDefault()?.TagName ?? "N/A",
             validReleases.FirstOrDefault()?.Name ?? "N/A"

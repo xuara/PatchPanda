@@ -3,8 +3,14 @@ using System.Globalization;
 
 namespace PatchPanda.Web.Helpers;
 
-internal static class VersionHelper
+internal static partial class VersionHelper
 {
+    [GeneratedRegex(@"\d+")]
+    private static partial Regex DigitsRegex();
+
+    [GeneratedRegex(@"\d+(?:\.\d+)+")]
+    private static partial Regex ComparableVersionRegex();
+
     public static string BuildRegexFromVersion(string version)
     {
         string regex = "^";
@@ -23,10 +29,23 @@ internal static class VersionHelper
         List<string> digitRegexes = [];
         for (int i = 0; i < periodSplit.Length; i++)
         {
-            digitRegexes.Add("\\d+");
+            // If it's the last digit group (patch version), let it scale up dynamically via wildcard
+            if (i == periodSplit.Length - 1)
+            {
+                digitRegexes.Add(@"\d+");
+            }
+            else
+            {
+                // Pin the explicit major/minor structural digits (e.g., "1" and "10") so it ignores older branches
+                digitRegexes.Add(Regex.Escape(periodSplit[i]));
+            }
         }
 
-        regex += string.Join('.', digitRegexes);
+        regex += string.Join(@"\.", digitRegexes);
+
+        regex += string.Join(@"\.", digitRegexes);
+
+        regex += string.Join(@"\.", digitRegexes);
 
         var dashSplit = periodSplit[^1].Split('-');
 
@@ -34,12 +53,12 @@ internal static class VersionHelper
         {
             if (dash.StartsWith('r') && dash.Length > 1)
             {
-                regex += "-r\\d+";
+                regex += @"-r\d+";
                 continue;
             }
             if (dash.StartsWith("ls", StringComparison.Ordinal) && dash.Length > 2)
             {
-                regex += "-ls\\d+";
+                regex += @"-ls\d+";
                 continue;
             }
             else
@@ -87,12 +106,12 @@ internal static class VersionHelper
         if (targetSegment is not null)
             return currentVersion.Replace(currentSegment, targetSegment);
 
-        var targetComparableVersion = Regex.Match(targetVersion, @"\d+(?:\.\d+)+").Value;
+        var targetComparableVersion = ComparableVersionRegex().Match(targetVersion).Value;
 
         if (string.IsNullOrWhiteSpace(targetComparableVersion))
             return null;
 
-        var currentComparableVersionMatch = Regex.Match(currentSegment, @"\d+(?:\.\d+)+");
+        var currentComparableVersionMatch = ComparableVersionRegex().Match(currentSegment);
 
         if (!currentComparableVersionMatch.Success)
             return currentVersion.Replace(currentSegment, targetComparableVersion);
@@ -110,8 +129,8 @@ internal static class VersionHelper
         string cleanedVersion1 = version1.TrimStart('v');
         string cleanedVersion2 = version2.TrimStart('v');
 
-        var numbers1 = Regex.Matches(cleanedVersion1, @"\d+");
-        var numbers2 = Regex.Matches(cleanedVersion2, @"\d+");
+        var numbers1 = DigitsRegex().Matches(cleanedVersion1);
+        var numbers2 = DigitsRegex().Matches(cleanedVersion2);
 
         if (numbers1.Count != numbers2.Count)
             return false;
@@ -127,22 +146,29 @@ internal static class VersionHelper
         return true;
     }
 
-    public static bool IsNewerThan(this string version1, string version2)
+    public static bool IsNewerThan(this string? version1, string? version2)
     {
+        if (string.IsNullOrWhiteSpace(version1) && string.IsNullOrWhiteSpace(version2))
+            return false;
+
+        if (string.IsNullOrWhiteSpace(version1))
+            return false;
+
+        if (string.IsNullOrWhiteSpace(version2))
+            return true;
+
         string cleanedVersion1 = version1.TrimStart('v');
         string cleanedVersion2 = version2.TrimStart('v');
 
-        // Only split if the character actually exists to avoid IndexOutOfRangeException
         if (cleanedVersion1.Contains('@'))
             cleanedVersion1 = cleanedVersion1.Split('@')[1];
 
         if (cleanedVersion2.Contains('@'))
             cleanedVersion2 = cleanedVersion2.Split('@')[1];
 
-        var numbers1 = Regex.Matches(cleanedVersion1, @"\d+");
-        var numbers2 = Regex.Matches(cleanedVersion2, @"\d+");
+        var numbers1 = DigitsRegex().Matches(cleanedVersion1);
+        var numbers2 = DigitsRegex().Matches(cleanedVersion2);
 
-        // Compare segments up to the shortest version length to handle 1.0 vs 1.0.1
         int count = Math.Min(numbers1.Count, numbers2.Count);
 
         for (int i = 0; i < count; i++)
@@ -154,12 +180,18 @@ internal static class VersionHelper
             if (num1 < num2) return false;
         }
 
-        // If all existing segments match, the one with MORE segments is newer (e.g., 1.0.1 > 1.0)
         return numbers1.Count > numbers2.Count;
     }
 
-    public static int NewerComparison(string version1, string version2)
+    public static int NewerComparison(string? version1, string? version2)
     {
+        if (string.IsNullOrWhiteSpace(version1) && string.IsNullOrWhiteSpace(version2))
+            return 0;
+        if (string.IsNullOrWhiteSpace(version1))
+            return 1;
+        if (string.IsNullOrWhiteSpace(version2))
+            return -1;
+
         if (version1.IsNewerThan(version2))
             return -1;
         else if (version2.IsNewerThan(version1))
