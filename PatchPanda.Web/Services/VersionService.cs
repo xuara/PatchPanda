@@ -91,6 +91,13 @@ internal class VersionService : IVersionService
         Container[] otherApps
     )
     {
+        string[] floatingTags = ["latest", "edge", "dev", "nightly"];
+        if (app.Version is not null && floatingTags.Contains(app.Version.ToLower()))
+        {
+            _logger.LogInformation("Skipping update check for floating tag: {Version}", app.Version);
+            return [];
+        }
+
         var repo = app.GetGitHubRepo();
 
         if (repo is null || app.Version is null || app.GitHubVersionRegex is null)
