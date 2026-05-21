@@ -2,7 +2,7 @@ using Octokit;
 
 namespace PatchPanda.Web.Services.Interfaces;
 
-public interface IVersionService
+internal interface IVersionService
 {
     Task<IReadOnlyList<Release>> GetVersions(Tuple<string, string> repo);
 

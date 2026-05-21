@@ -1,6 +1,6 @@
 namespace PatchPanda.Web.Services.Interfaces;
 
-public interface IAiService
+internal interface IAiService
 {
     Task<SummaryResult?> SummarizeReleaseNotes(string releaseNotes);
 
@@ -9,16 +9,16 @@ public interface IAiService
     bool IsInitialized();
 }
 
-public interface IAiResult { }
+internal interface IAiResult { }
 
-public class SummaryResult : IAiResult
+internal class SummaryResult : IAiResult
 {
     public required string Summary { get; set; }
 
     public required bool Breaking { get; set; }
 }
 
-public class SecurityAnalysisResult : IAiResult
+internal class SecurityAnalysisResult : IAiResult
 {
     public required string Analysis { get; set; }
 

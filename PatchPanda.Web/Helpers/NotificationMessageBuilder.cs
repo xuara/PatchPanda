@@ -2,7 +2,7 @@ using System.Text;
 
 namespace PatchPanda.Web.Helpers;
 
-public static class NotificationMessageBuilder
+internal static class NotificationMessageBuilder
 {
     public static string BuildNewVersion(
         Container mainApp,
@@ -65,9 +65,9 @@ public static class NotificationMessageBuilder
         if (repo is not null)
             message.AppendLine($"\nhttps://github.com/{repo.Item1}/{repo.Item2}/releases");
 
-        if (Constants.BASE_URL is not null)
+        if (Constants.BaseUrl is not null)
             message.AppendLine(
-                $"\n__Verify and Update Here:__ {Constants.BASE_URL}/versions/{mainApp.Id}"
+                $"\n__Verify and Update Here:__ {Constants.BaseUrl}/versions/{mainApp.Id}"
             );
         else
             message.AppendLine(
@@ -110,9 +110,9 @@ public static class NotificationMessageBuilder
                 message.AppendLine($"\n**Error Details:**\n{errorMessage}");
         }
 
-        if (Constants.BASE_URL is not null)
+        if (Constants.BaseUrl is not null)
             message.AppendLine(
-                $"\n__View Container Details:__ {Constants.BASE_URL}/versions/{container.Id}"
+                $"\n__View Container Details:__ {Constants.BaseUrl}/versions/{container.Id}"
             );
 
         return message.ToString();

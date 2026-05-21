@@ -3,19 +3,19 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace PatchPanda.Web.Db;
 
-public class DataContext(DbContextOptions<DataContext> options) : DbContext(options)
+internal class DataContext(DbContextOptions<DataContext> options) : DbContext(options)
 {
     public DbSet<ComposeStack> Stacks { get; set; } = default!;
 
-    public DbSet<MultiContainerApp> MultiContainerApps { get; set; } = default!;
+    internal DbSet<MultiContainerApp> MultiContainerApps { get; set; } = default!;
 
-    public DbSet<Container> Containers { get; set; } = default!;
+    internal DbSet<Container> Containers { get; set; } = default!;
 
-    public DbSet<AppVersion> AppVersions { get; set; } = default!;
+    internal DbSet<AppVersion> AppVersions { get; set; } = default!;
 
-    public DbSet<AppSetting> AppSettings { get; set; } = default!;
+    internal DbSet<AppSetting> AppSettings { get; set; } = default!;
 
-    public DbSet<UpdateAttempt> UpdateAttempts { get; set; } = default!;
+    internal DbSet<UpdateAttempt> UpdateAttempts { get; set; } = default!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -69,11 +69,7 @@ public class DataContext(DbContextOptions<DataContext> options) : DbContext(opti
 
         var listStringConverter = new ValueConverter<List<Tuple<string, string>>?, string?>(
             v =>
-                JsonSerializer.Serialize(
-                    v,
-                    typeof(List<Tuple<string, string>>),
-                    jsonSerializerOptions
-                ),
+                JsonSerializer.Serialize<List<Tuple<string, string>>>(v!, jsonSerializerOptions),
             v =>
                 v == null
                     ? null
@@ -97,5 +93,12 @@ public class DataContext(DbContextOptions<DataContext> options) : DbContext(opti
             .Entity<Container>()
             .Property(x => x.SecondaryGitHubRepos)
             .HasConversion(listStringConverter);
+
+        modelBuilder.Entity<AppSetting>().HasKey(x => x.Key);
+        modelBuilder.Entity<AppVersion>().HasKey(x => x.Id);
+        modelBuilder.Entity<ComposeStack>().HasKey(x => x.Id);
+        modelBuilder.Entity<MultiContainerApp>().HasKey(x => x.Id);
+        modelBuilder.Entity<UpdateAttempt>().HasKey(x => x.Id);
+        modelBuilder.Entity<Container>().HasKey(x => x.Id);
     }
 }

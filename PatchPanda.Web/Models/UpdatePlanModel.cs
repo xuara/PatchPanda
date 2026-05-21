@@ -1,6 +1,6 @@
 namespace PatchPanda.Web.Models;
 
-public class UpdatePlanModel
+internal class UpdatePlanModel
 {
     public List<string>? Steps { get; init; }
 

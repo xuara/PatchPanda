@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace PatchPanda.Web.Services;
 
-public class AppriseService : IAppriseService
+internal class AppriseService : IAppriseService
 {
     private readonly string[] _urls;
     private readonly string? _appriseUrl;
@@ -25,27 +25,19 @@ public class AppriseService : IAppriseService
         _httpClientFactory = httpClientFactory;
         _urls = [];
 
-        var appriseApiUrl = configuration.GetValue<string?>(Constants.VariableKeys.APPRISE_API_URL);
+        var appriseApiUrl = configuration.GetValue<string?>(VariableKeys.AppriseApiUrl) ?? Environment.GetEnvironmentVariable("APPRISE_API_URL");
 
         if (string.IsNullOrWhiteSpace(appriseApiUrl))
         {
-            _logger.LogInformation(
-                "{NotificationUrlsKey} variable is missing, AppriseService is not initialized.",
-                Constants.VariableKeys.APPRISE_API_URL
-            );
+            _logger.LogInformation("{NotificationUrlsKey} variable is missing, AppriseService is not initialized.", VariableKeys.AppriseApiUrl);
             return;
         }
 
-        var notificationUrlsRaw = configuration.GetValue<string?>(
-            Constants.VariableKeys.APPRISE_NOTIFICATION_URLS
-        );
+        var notificationUrlsRaw = configuration.GetValue<string?>(VariableKeys.AppriseNotificationUrls) ?? Environment.GetEnvironmentVariable("APPRISE_NOTIFICATION_URLS");
 
         if (string.IsNullOrWhiteSpace(notificationUrlsRaw))
         {
-            _logger.LogInformation(
-                "{NotificationUrlsKey} variable is missing, AppriseService is not initialized.",
-                Constants.VariableKeys.APPRISE_NOTIFICATION_URLS
-            );
+            _logger.LogInformation("{NotificationUrlsKey} variable is missing, AppriseService is not initialized.", VariableKeys.AppriseNotificationUrls);
             return;
         }
 
@@ -76,7 +68,7 @@ public class AppriseService : IAppriseService
 
         try
         {
-            var httpClient = _httpClientFactory.CreateClient();
+            using var httpClient = _httpClientFactory.CreateClient();
 
             var processedUrls = new List<string>(_urls.Length);
             for (int i = 0; i < _urls.Length; i++)
@@ -93,7 +85,7 @@ public class AppriseService : IAppriseService
                 if (!url.Contains("emojis="))
                     additions.Add("emojis=yes");
 
-                if (additions.Any())
+                if (additions.Count > 0)
                     url += string.Join('&', additions);
 
                 processedUrls.Add(url);
@@ -101,13 +93,13 @@ public class AppriseService : IAppriseService
             var payload = new { body = message, urls = string.Join(',', processedUrls) };
 
             var json = JsonSerializer.Serialize(payload);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            using var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            var resp = await httpClient.PostAsync(targetUrl, content, cancellationToken);
+            var resp = await httpClient.PostAsync(new Uri(targetUrl), content, cancellationToken);
 
             resp.EnsureSuccessStatusCode();
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             throw new FailedNotificationException(targetUrl, ex);
         }

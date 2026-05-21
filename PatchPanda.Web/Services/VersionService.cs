@@ -3,7 +3,7 @@ using Octokit;
 
 namespace PatchPanda.Web.Services;
 
-public class VersionService : IVersionService
+internal class VersionService : IVersionService
 {
     private readonly ILogger<VersionService> _logger;
     private readonly IConfiguration _configuration;
@@ -23,13 +23,11 @@ public class VersionService : IVersionService
         _logger = logger;
         _configuration = configuration;
 
-        Username = _configuration["GITHUB_USERNAME"];
-        Password = _configuration["GITHUB_PASSWORD"];
+        Username = _configuration["GithubUsername"] ?? Environment.GetEnvironmentVariable("GITHUB_USERNAME");
+        Password = _configuration["GithubPassword"] ?? Environment.GetEnvironmentVariable("GITHUB_PASSWORD"); ;
 
         if (Username is null || Password is null)
-            _logger.LogWarning(
-                "GitHub credentials are not set in environment variables. You may run into rate limiting issues."
-            );
+            _logger.LogWarning("GitHub credentials are not set in environment variables. You may run into rate limiting issues.");
 
         _dbContextFactory = dbContextFactory;
         _aiService = aiService;
@@ -93,6 +91,13 @@ public class VersionService : IVersionService
         Container[] otherApps
     )
     {
+        string[] floatingTags = ["latest", "edge", "dev", "nightly"];
+        if (app.Version is not null && floatingTags.Contains(app.Version.ToLower()))
+        {
+            _logger.LogInformation("Skipping update check for floating tag: {Version}", app.Version);
+            return [];
+        }
+
         var repo = app.GetGitHubRepo();
 
         if (repo is null || app.Version is null || app.GitHubVersionRegex is null)
@@ -103,7 +108,7 @@ public class VersionService : IVersionService
         var validReleases = allReleases.Where(x =>
             (x.TagName is not null && Regex.IsMatch(x.TagName, app.GitHubVersionRegex))
             || (x.Name is not null && Regex.IsMatch(x.Name, app.GitHubVersionRegex))
-        );
+        ).ToList();
 
         using var db = _dbContextFactory.CreateDbContext();
 
@@ -135,8 +140,14 @@ public class VersionService : IVersionService
                 Prerelease = x.Prerelease,
                 VersionNumber = x.TagName,
                 Breaking = false,
-                Applications = targetApps
-            });
+
+            }).ToList();
+
+        // Manually add the applications to the read-only list
+        foreach (var nv in newerVersions)
+        {
+            nv.Applications.AddRange(targetApps);
+        }
 
         var appNewerVersions = await db
             .AppVersions.Include(x => x.Applications)
@@ -168,7 +179,7 @@ public class VersionService : IVersionService
             var securityScanningEnabled =
                 (
                     await db.AppSettings.FirstOrDefaultAsync(x =>
-                        x.Key == Constants.SettingsKeys.SECURITY_SCANNING_ENABLED
+                        x.Key == SettingsKeys.SecurityScanningEnabled
                     )
                 )?.Value == "true";
 
@@ -224,7 +235,7 @@ public class VersionService : IVersionService
                         }
                     }
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (ex is not OperationCanceledException)
                 {
                     _logger.LogError(
                         ex,
@@ -238,7 +249,7 @@ public class VersionService : IVersionService
             if (_aiService.IsInitialized())
             {
                 SummaryResult? result = null;
-                for (int i = 1; i <= Constants.Limits.MAX_OLLAMA_ATTEMPTS; i++)
+                for (int i = 1; i <= Limits.MaxOllamaAttempts; i++)
                 {
                     result = await _aiService.SummarizeReleaseNotes(notSeenNewVersion.Body);
 
@@ -248,7 +259,7 @@ public class VersionService : IVersionService
                     _logger.LogWarning(
                         "Attempting to get summary notes from Ollama, request number {Count} out of {Max}",
                         i + 1,
-                        Constants.Limits.MAX_OLLAMA_ATTEMPTS
+                        Limits.MaxOllamaAttempts
                     );
                 }
 
@@ -268,10 +279,10 @@ public class VersionService : IVersionService
 
         _logger.LogInformation(
             "Got {Count} newer versions, newest is {Newest}. Looked for regex {Regex}, received {ValidReleaseCount} valid releases from GitHub, example tag name {TagName} and name {Name} of release.",
-            newerVersions.Count(),
+            newerVersions.Count,
             newerVersions.FirstOrDefault()?.VersionNumber ?? "None found",
-            app.Regex,
-            validReleases.Count(),
+            app.GitHubVersionRegex,
+            validReleases.Count,
             validReleases.FirstOrDefault()?.TagName ?? "N/A",
             validReleases.FirstOrDefault()?.Name ?? "N/A"
         );

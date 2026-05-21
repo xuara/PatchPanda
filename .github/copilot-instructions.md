@@ -67,7 +67,7 @@ Services follow consistent DI patterns in `Program.cs`:
 
 ### Running Locally
 
-1. Ensure MySQL/MariaDB running (connection string from env vars: `DB_HOST`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`)
+1. Ensure MySQL/MariaDB running (connection string from env vars: `DB_HOST`, `DbName`, `DB_USERNAME`, `DB_PASSWORD`)
 2. Run in DEBUG mode - automatically uses Windows named pipe for Docker
 3. EF migrations auto-apply on startup via `dbContext.Database.Migrate()`
 

@@ -5,7 +5,7 @@ using Docker.DotNet;
 
 namespace PatchPanda.Web.Services;
 
-public class DockerService
+internal class DockerService
 {
     private string DockerSocket { get; init; }
 
@@ -53,14 +53,17 @@ public class DockerService
             await dockerClient.System.PingAsync();
             return true;
         }
-        catch (Exception)
+        catch (Exception ex) when (ex is HttpRequestException or IOException or DockerApiException)
         {
             return false;
         }
     }
 
-    private DockerClient GetClient() =>
-        new DockerClientConfiguration(new Uri(DockerSocket)).CreateClient();
+    private DockerClient GetClient()
+    {
+        using var config = new DockerClientConfiguration(new Uri(DockerSocket));
+        return config.CreateClient();
+    }
 
     private async Task<IList<ContainerListResponse>?> GetAllContainers(
         CancellationToken cancellationToken = default
@@ -77,7 +80,7 @@ public class DockerService
 
             return containers;
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             _logger.LogWarning(ex, "Error while getting Docker containers.");
             return null;
@@ -404,7 +407,7 @@ public class DockerService
                 if (!process.HasExited)
                     process.Kill(true);
             }
-            catch (Exception killException)
+            catch (Exception killException) when (killException is not OperationCanceledException)
             {
                 _logger.LogWarning(
                     killException,

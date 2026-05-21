@@ -368,3 +368,8 @@ FodyWeavers.xsd
 
 # Idea
 .idea/
+
+# PatchPanda Local Testing
+data/
+docker-compose.yaml
+docker-compose.override.yaml

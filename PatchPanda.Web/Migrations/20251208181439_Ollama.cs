@@ -5,7 +5,7 @@
 namespace PatchPanda.Web.Migrations
 {
     /// <inheritdoc />
-    public partial class Ollama : Migration
+    internal partial class Ollama : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

@@ -1,6 +1,6 @@
 namespace PatchPanda.Web.Services.Interfaces;
 
-public interface INotificationService
+internal interface INotificationService
 {
     bool AnyInitialized { get; }
 

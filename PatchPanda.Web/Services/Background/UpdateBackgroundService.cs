@@ -2,13 +2,13 @@ using System.Text.Json;
 
 namespace PatchPanda.Web.Services.Background;
 
-public class UpdateBackgroundService(
+internal class UpdateBackgroundService(
     IServiceScopeFactory serviceProvider,
     JobRegistry jobRegistry,
     JobQueue queue
 ) : IHostedService, IDisposable
 {
-    private const int JobTimeoutSeconds = Constants.Limits.UPDATE_JOB_TIMEOUT_SECONDS;
+    private const int JobTimeoutSeconds = Limits.UpdateJobTimeoutSeconds;
     private CancellationTokenSource? _cts;
     private Task? _processingTask;
 
@@ -27,34 +27,38 @@ public class UpdateBackgroundService(
         logger.LogInformation("Update background service starting (queue consumer)");
 
         _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        _processingTask = Task.Run(() => ProcessQueueAsync(_cts.Token));
+        _processingTask = Task.Run(() => ProcessQueueAsync(_cts.Token), _cts.Token);
 
         return Task.CompletedTask;
     }
 
-    public Task StopAsync(CancellationToken cancellationToken)
+    public async Task StopAsync(CancellationToken cancellationToken)
     {
         using var scope = serviceProvider.CreateScope();
         var logger = scope.ServiceProvider.GetService<ILogger<UpdateBackgroundService>>();
 
         logger?.LogInformation("Update background service stopping");
 
-        _cts?.Cancel();
+        if (_cts is not null)
+        {
+            await _cts.CancelAsync();
+        }
 
         try
         {
-            _processingTask?.Wait(cancellationToken);
+            if (_processingTask is not null)
+            {
+                await _processingTask.WaitAsync(cancellationToken);
+            }
         }
         catch (OperationCanceledException) { }
-
-        return Task.CompletedTask;
     }
 
     private async Task ProcessJob<TJob>(
         TJob job,
         ILogger<UpdateBackgroundService> logger,
-        CancellationToken cancellationToken,
-        Func<string, CancellationToken, Task> function
+        Func<string, CancellationToken, Task> function,
+        CancellationToken cancellationToken
     )
         where TJob : AbstractJob
     {
@@ -102,7 +106,7 @@ public class UpdateBackgroundService(
             logger.LogError(ex, "Job {JobName} timed out", jobName);
             jobRegistry.AppendOutput(job.Sequence, $"{jobName} timed out: " + ex.Message);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             logger.LogError(
                 ex,
@@ -138,8 +142,7 @@ public class UpdateBackgroundService(
                         await ProcessJob(
                             updateJob,
                             logger,
-                            cancellationToken,
-                            async (string jobName, CancellationToken jobCancellationToken) =>
+                            async (jobName, jobCancellationToken) =>
                             {
                                 var updateService =
                                     scope.ServiceProvider.GetRequiredService<UpdateService>();
@@ -185,7 +188,8 @@ public class UpdateBackgroundService(
                                     updateJob.IsAutomatic,
                                     jobCancellationToken
                                 );
-                            }
+                            },
+                            cancellationToken
                         );
                         break;
 
@@ -193,13 +197,13 @@ public class UpdateBackgroundService(
                         await ProcessJob(
                             resetAllJob,
                             logger,
-                            cancellationToken,
-                            async (string jobName, CancellationToken jobCancellationToken) =>
+                            async (jobName, jobCancellationToken) =>
                             {
                                 var dockerService =
                                     scope.ServiceProvider.GetRequiredService<DockerService>();
                                 await dockerService.ResetComposeStacks(jobCancellationToken);
-                            }
+                            },
+                            cancellationToken
                         );
                         break;
 
@@ -207,13 +211,13 @@ public class UpdateBackgroundService(
                         await ProcessJob(
                             checkForUpdatesAllJob,
                             logger,
-                            cancellationToken,
-                            async (string jobName, CancellationToken jobCancellationToken) =>
+                            async (jobName, jobCancellationToken) =>
                             {
                                 var updateService =
                                     scope.ServiceProvider.GetRequiredService<UpdateService>();
                                 await updateService.CheckAllForUpdates(jobCancellationToken);
-                            }
+                            },
+                            cancellationToken
                         );
                         break;
 
@@ -221,8 +225,7 @@ public class UpdateBackgroundService(
                         await ProcessJob(
                             restartStackJob,
                             logger,
-                            cancellationToken,
-                            async (string jobName, CancellationToken jobCancellationToken) =>
+                            async (jobName, jobCancellationToken) =>
                             {
                                 var dockerService =
                                     scope.ServiceProvider.GetRequiredService<DockerService>();
@@ -260,7 +263,8 @@ public class UpdateBackgroundService(
                                         jobRegistry.AppendOutput(restartStackJob.Sequence, line),
                                     jobCancellationToken
                                 );
-                            }
+                            },
+                            cancellationToken
                         );
                         break;
 

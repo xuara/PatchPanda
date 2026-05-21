@@ -2,8 +2,8 @@ using System.Text.Json.Serialization;
 
 namespace PatchPanda.Web.DTOs;
 
-public class PortainerAuthResponse
+internal class PortainerAuthResponse
 {
     [JsonPropertyName("jwt")]
-    public required string Jwt { get; set; }
+    internal required string Jwt { get; set; }
 }

@@ -1,6 +1,6 @@
 namespace PatchPanda.Web.Services.Hosted;
 
-public class VersionCheckHostedService : IHostedService, IDisposable
+internal class VersionCheckHostedService : IHostedService, IDisposable
 {
     private readonly ILogger<VersionCheckHostedService> _logger;
     private readonly JobRegistry _jobRegistry;
@@ -19,10 +19,10 @@ public class VersionCheckHostedService : IHostedService, IDisposable
         _logger = logger;
         _jobRegistry = jobRegistry;
 
-        if (string.IsNullOrWhiteSpace(Constants.BASE_URL))
+        if (string.IsNullOrWhiteSpace(Constants.BaseUrl))
             _logger.LogWarning(
                 "{BaseUrlKey} was not set, therefore update URLs will not be provided.",
-                Constants.VariableKeys.BASE_URL
+                VariableKeys.BaseUrl
             );
     }
 
@@ -75,7 +75,7 @@ public class VersionCheckHostedService : IHostedService, IDisposable
                     "Skipping CheckForUpdatesAll enqueue because one is already queued or processing."
                 );
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             _logger.LogError(ex, "Error while enqueueing scheduled version check jobs");
         }

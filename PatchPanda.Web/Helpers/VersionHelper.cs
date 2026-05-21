@@ -1,9 +1,16 @@
 using System.Text.RegularExpressions;
+using System.Globalization;
 
 namespace PatchPanda.Web.Helpers;
 
-public static class VersionHelper
+internal static partial class VersionHelper
 {
+    [GeneratedRegex(@"\d+")]
+    private static partial Regex DigitsRegex();
+
+    [GeneratedRegex(@"\d+(?:\.\d+)+")]
+    private static partial Regex ComparableVersionRegex();
+
     public static string BuildRegexFromVersion(string version)
     {
         string regex = "^";
@@ -22,33 +29,42 @@ public static class VersionHelper
         List<string> digitRegexes = [];
         for (int i = 0; i < periodSplit.Length; i++)
         {
-            digitRegexes.Add("\\d+");
-        }
-
-        regex += string.Join('.', digitRegexes);
-
-        var dashSplit = periodSplit[^1].Split('-');
-
-        foreach (var dash in dashSplit[1..])
-        {
-            if (dash.StartsWith('r') && dash.Length > 1)
+            // If it's the last digit group (patch version), let it scale up dynamically via wildcard
+            if (i == periodSplit.Length - 1)
             {
-                regex += "-r\\d+";
-                continue;
-            }
-            if (dash.StartsWith("ls") && dash.Length > 2)
-            {
-                regex += "-ls\\d+";
-                continue;
+                digitRegexes.Add(@"\d+");
             }
             else
             {
-                regex += "-" + dash;
+                // Pin the explicit major/minor structural digits
+                digitRegexes.Add(Regex.Escape(periodSplit[i]));
+            }
+        }
+
+        // Append the joined regex only once
+        regex += string.Join(@"\.", digitRegexes);
+
+        var lastSegment = periodSplit[^1];
+        var dashSplit = lastSegment.Split('-');
+
+        // Handle dash suffixes (e.g., -ls123, -r1)
+        foreach (var dash in dashSplit.Skip(1))
+        {
+            if (dash.StartsWith('r') && dash.Length > 1)
+            {
+                regex += @"-r\d+";
+            }
+            else if (dash.StartsWith("ls", StringComparison.Ordinal) && dash.Length > 2)
+            {
+                regex += @"-ls\d+";
+            }
+            else
+            {
+                regex += "-" + Regex.Escape(dash);
             }
         }
 
         regex += "$";
-
         return regex;
     }
 
@@ -86,12 +102,12 @@ public static class VersionHelper
         if (targetSegment is not null)
             return currentVersion.Replace(currentSegment, targetSegment);
 
-        var targetComparableVersion = Regex.Match(targetVersion, @"\d+(?:\.\d+)+").Value;
+        var targetComparableVersion = ComparableVersionRegex().Match(targetVersion).Value;
 
         if (string.IsNullOrWhiteSpace(targetComparableVersion))
             return null;
 
-        var currentComparableVersionMatch = Regex.Match(currentSegment, @"\d+(?:\.\d+)+");
+        var currentComparableVersionMatch = ComparableVersionRegex().Match(currentSegment);
 
         if (!currentComparableVersionMatch.Success)
             return currentVersion.Replace(currentSegment, targetComparableVersion);
@@ -109,16 +125,16 @@ public static class VersionHelper
         string cleanedVersion1 = version1.TrimStart('v');
         string cleanedVersion2 = version2.TrimStart('v');
 
-        var numbers1 = Regex.Matches(cleanedVersion1, @"\d+");
-        var numbers2 = Regex.Matches(cleanedVersion2, @"\d+");
+        var numbers1 = DigitsRegex().Matches(cleanedVersion1);
+        var numbers2 = DigitsRegex().Matches(cleanedVersion2);
 
         if (numbers1.Count != numbers2.Count)
             return false;
 
         for (int i = 0; i < numbers1.Count; i++)
         {
-            int num1 = int.Parse(numbers1[i].Value);
-            int num2 = int.Parse(numbers2[i].Value);
+            int num1 = int.Parse(numbers1[i].Value, CultureInfo.InvariantCulture);
+            int num2 = int.Parse(numbers2[i].Value, CultureInfo.InvariantCulture);
             if (num1 != num2)
                 return false;
         }
@@ -126,8 +142,17 @@ public static class VersionHelper
         return true;
     }
 
-    public static bool IsNewerThan(this string version1, string version2)
+    public static bool IsNewerThan(this string? version1, string? version2)
     {
+        if (string.IsNullOrWhiteSpace(version1) && string.IsNullOrWhiteSpace(version2))
+            return false;
+
+        if (string.IsNullOrWhiteSpace(version1))
+            return false;
+
+        if (string.IsNullOrWhiteSpace(version2))
+            return true;
+
         string cleanedVersion1 = version1.TrimStart('v');
         string cleanedVersion2 = version2.TrimStart('v');
 
@@ -137,28 +162,32 @@ public static class VersionHelper
         if (cleanedVersion2.Contains('@'))
             cleanedVersion2 = cleanedVersion2.Split('@')[1];
 
-        var numbers1 = Regex.Matches(cleanedVersion1, @"\d+");
-        var numbers2 = Regex.Matches(cleanedVersion2, @"\d+");
+        var numbers1 = DigitsRegex().Matches(cleanedVersion1);
+        var numbers2 = DigitsRegex().Matches(cleanedVersion2);
 
-        if (numbers1.Count != numbers2.Count)
-            return false;
+        int count = Math.Min(numbers1.Count, numbers2.Count);
 
-        for (int i = 0; i < numbers1.Count; i++)
+        for (int i = 0; i < count; i++)
         {
-            int num1 = int.Parse(numbers1[i].Value);
-            int num2 = int.Parse(numbers2[i].Value);
+            int num1 = int.Parse(numbers1[i].Value, CultureInfo.InvariantCulture);
+            int num2 = int.Parse(numbers2[i].Value, CultureInfo.InvariantCulture);
 
-            if (num1 > num2)
-                return true;
-            else if (num1 < num2)
-                return false;
+            if (num1 > num2) return true;
+            if (num1 < num2) return false;
         }
 
-        return false;
+        return numbers1.Count > numbers2.Count;
     }
 
-    public static int NewerComparison(string version1, string version2)
+    public static int NewerComparison(string? version1, string? version2)
     {
+        if (string.IsNullOrWhiteSpace(version1) && string.IsNullOrWhiteSpace(version2))
+            return 0;
+        if (string.IsNullOrWhiteSpace(version1))
+            return 1;
+        if (string.IsNullOrWhiteSpace(version2))
+            return -1;
+
         if (version1.IsNewerThan(version2))
             return -1;
         else if (version2.IsNewerThan(version1))

@@ -5,7 +5,7 @@
 namespace PatchPanda.Web.Migrations
 {
     /// <inheritdoc />
-    public partial class IgnoreContainer : Migration
+    internal partial class IgnoreContainer : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

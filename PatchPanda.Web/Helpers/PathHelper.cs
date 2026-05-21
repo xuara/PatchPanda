@@ -1,6 +1,6 @@
 ﻿namespace PatchPanda.Web.Helpers;
 
-public static class PathHelper
+internal static class PathHelper
 {
     public static string? ComputePathForEnvironment(this string? path, IFileService fileService)
     {

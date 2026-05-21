@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace PatchPanda.Web.Migrations
 {
     /// <inheritdoc />
-    public partial class ErrorHandling : Migration
+    internal partial class ErrorHandling : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

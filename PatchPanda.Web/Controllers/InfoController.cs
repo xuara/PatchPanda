@@ -4,17 +4,17 @@ namespace PatchPanda.Web.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class InfoController : ControllerBase
+internal class InfoController : ControllerBase
 {
     private readonly IDbContextFactory<DataContext> _dbFactory;
 
-    public InfoController(IDbContextFactory<DataContext> dbFactory)
+    internal InfoController(IDbContextFactory<DataContext> dbFactory)
     {
         _dbFactory = dbFactory;
     }
 
     [HttpGet]
-    public async Task<IActionResult> Get()
+    internal async Task<IActionResult> Get()
     {
         await using var db = await _dbFactory.CreateDbContextAsync();
 

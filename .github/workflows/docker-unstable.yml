@@ -11,6 +11,9 @@ on:
         required: true
         default: "main"
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 concurrency:
   group: docker-unstable-${{ github.ref }}
   cancel-in-progress: true
@@ -56,6 +59,8 @@ jobs:
           tags: ghcr.io/${{ env.REPO_LC }}:unstable
           provenance: true
           sbom: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   test-multi-arch:
     needs: build-and-push

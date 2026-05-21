@@ -1,9 +1,11 @@
 ﻿namespace PatchPanda.Units;
 
-public static class Helper
+using Microsoft.EntityFrameworkCore.Storage;
+
+internal static class Helper
 {
-    public static AppVersion GetTestAppVersion(string githubVersion) =>
-        new AppVersion
+    internal static AppVersion GetTestAppVersion(string githubVersion) =>
+        new()
         {
             Body = "Testing body",
             Breaking = false,
@@ -12,7 +14,7 @@ public static class Helper
             Prerelease = false
         };
 
-    public static ComposeStack GetTestStack(
+    internal static ComposeStack GetTestStack(
         string version,
         string? githubNewVersion,
         string targetImage
@@ -25,7 +27,7 @@ public static class Helper
             githubNewVersion is null ? null : VersionHelper.BuildRegexFromVersion(githubNewVersion)
         );
 
-    public static ComposeStack GetTestStack(
+    internal static ComposeStack GetTestStack(
         string version,
         string? githubNewVersion,
         string targetImage,
@@ -37,25 +39,23 @@ public static class Helper
         {
             Id = 1,
             StackName = "TestStack",
-            ConfigFile = "docker-compose.yml",
-            Apps =
-            [
-                new Container
-                {
-                    Id = 1,
-                    Name = "TestApp",
-                    IsSecondary = false,
-                    Regex = regex,
-                    GitHubVersionRegex = githubVersionRegex,
-                    Version = version,
-                    TargetImage = targetImage,
-                    StackId = 1,
-                    NewerVersions = [],
-                    CurrentSha = TestData.SHA,
-                    Uptime = TestData.UPTIME
-                }
-            ]
+            ConfigFile = "/app/docker-compose.yml",
         };
+
+        stack.Apps.Add(new Container
+        {
+            Id = 1,
+            Name = "TestApp",
+            IsSecondary = false,
+            Regex = regex,
+            GitHubVersionRegex = githubVersionRegex,
+            Version = version,
+            TargetImage = targetImage,
+            StackId = 1,
+            NewerVersions = [],
+            CurrentSha = TestData.SHA,
+            Uptime = TestData.UPTIME
+        });
 
         if (githubNewVersion is not null)
             stack.Apps[0].NewerVersions.Add(GetTestAppVersion(githubNewVersion));
@@ -63,17 +63,21 @@ public static class Helper
         return stack;
     }
 
-    public static ComposeStack GetTestStack() =>
-        GetTestStack(TestData.VERSION, TestData.NEW_VERSION, TestData.IMAGE);
+    internal static ComposeStack GetTestStack() =>
+        GetTestStack(TestData.VERSION, TestData.NewVersion, TestData.IMAGE);
 
-    public static IDbContextFactory<DataContext> CreateInMemoryFactory()
+    internal static IDbContextFactory<DataContext> CreateInMemoryFactory()
     {
-        var serviceProvider = new ServiceCollection()
-            .AddDbContextFactory<DataContext>(options =>
-                options.UseInMemoryDatabase(Guid.NewGuid().ToString())
-            )
-            .BuildServiceProvider();
+        var databaseName = Guid.NewGuid().ToString();
 
-        return serviceProvider.GetRequiredService<IDbContextFactory<DataContext>>();
+        var options = new DbContextOptionsBuilder<DataContext>()
+            .UseInMemoryDatabase(databaseName).Options;
+
+        return new SimpleDbContextFactory(options);
+    }
+
+    internal sealed class SimpleDbContextFactory(DbContextOptions<DataContext> options) : IDbContextFactory<DataContext>
+    {
+        public DataContext CreateDbContext() => new(options);
     }
 }

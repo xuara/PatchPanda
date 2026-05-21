@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace PatchPanda.Web.Services;
 
-public class OllamaService : IAiService
+internal class OllamaService : IAiService
 {
     private static readonly JsonSerializerOptions CachedJsonSerializerOptions = new()
     {
@@ -17,43 +17,30 @@ public class OllamaService : IAiService
     private readonly ILogger<OllamaService> _logger;
     private readonly bool _isInitialized;
 
-    public OllamaService(
-        IConfiguration config,
-        ILogger<OllamaService> logger,
-        IHttpClientFactory httpClientFactory
-    )
+    public OllamaService(IConfiguration config, ILogger<OllamaService> logger, IHttpClientFactory httpClientFactory)
     {
-        var endpoint = config[Constants.VariableKeys.OLLAMA_URL];
-        var model = config[Constants.VariableKeys.OLLAMA_MODEL];
+        // Check Config first, fallback to Environment Variable
+        var endpoint = config[VariableKeys.OllamaUrl] ?? Environment.GetEnvironmentVariable("OLLAMA_URL");
+        var model = config[VariableKeys.OllamaModel] ?? Environment.GetEnvironmentVariable("OLLAMA_MODEL");
+        var contextSize = config[VariableKeys.OllamaNumCtx] ?? Environment.GetEnvironmentVariable("OLLAMA_NUM_CTX");
 
         _endpoint = endpoint;
         _model = model;
         _logger = logger;
-
         _httpClientFactory = httpClientFactory;
 
         if (string.IsNullOrWhiteSpace(endpoint) || string.IsNullOrWhiteSpace(model))
         {
-            _logger.LogWarning(
-                "OllamaService not initialized because either {EndpointKey} or {ModelKey} were not configured.",
-                Constants.VariableKeys.OLLAMA_URL,
-                Constants.VariableKeys.OLLAMA_MODEL
-            );
+            _logger.LogWarning("OllamaService not initialized: {EndpointKey} or {ModelKey} missing.",
+                VariableKeys.OllamaUrl, VariableKeys.OllamaModel);
             return;
         }
-
-        var contextSize = config[Constants.VariableKeys.OLLAMA_NUM_CTX];
 
         if (contextSize is not null && int.TryParse(contextSize, out var contextSizeInt))
             _contextSize = contextSizeInt;
 
         _isInitialized = true;
-        _logger.LogInformation(
-            "OllamaService configured with endpoint {Endpoint}, model {Model} and context size {ContextSize}.",
-            endpoint,
-            model,
-            _contextSize
-        );
+        _logger.LogInformation("OllamaService configured with endpoint {Endpoint}, model {Model}.", endpoint, model);
     }
 
     public bool IsInitialized() => _isInitialized;
@@ -77,7 +64,7 @@ public class OllamaService : IAiService
             stream = false,
             options = new { num_ctx = _contextSize },
         };
-        var content = new StringContent(
+        using var content = new StringContent(
             JsonSerializer.Serialize(request),
             Encoding.UTF8,
             "application/json"
@@ -85,7 +72,7 @@ public class OllamaService : IAiService
 
         try
         {
-            var response = await httpClient.PostAsync(_endpoint + "/api/generate", content);
+            var response = await httpClient.PostAsync(new Uri($"{_endpoint}/api/generate"), content);
             response.EnsureSuccessStatusCode();
 
             var ollamaResult = await response.Content.ReadFromJsonAsync<OllamaResult>(
@@ -99,7 +86,7 @@ public class OllamaService : IAiService
             );
             return innerResponse;
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             _logger.LogError(ex, "There was an error while contacting the Ollama API.");
             return null;
@@ -211,7 +198,7 @@ public class OllamaService : IAiService
         );
     }
 
-    public class OllamaResult
+    internal class OllamaResult
     {
         public required string Response { get; set; }
         public string? Thinking { get; set; }
