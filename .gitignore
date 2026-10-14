@@ -373,3 +373,4 @@ FodyWeavers.xsd
 data/
 docker-compose.yaml
 docker-compose.override.yaml
+.vscode/

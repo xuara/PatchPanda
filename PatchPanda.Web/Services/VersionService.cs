@@ -131,17 +131,28 @@ internal class VersionService : IVersionService
             }
         }
 
-        var newerVersions = validReleases
-            .Where(x => x.TagName is not null && x.TagName.IsNewerThan(app.Version))
-            .Select(x => new AppVersion()
-            {
-                Body = x.Body,
-                Name = x.Name,
-                Prerelease = x.Prerelease,
-                VersionNumber = x.TagName,
-                Breaking = false,
+        static string NormalizeVersion(string version)
+        {
+            var cleaned = version.TrimStart('v').Split("-ls")[0];
+            return cleaned;
+        }
 
-            }).ToList();
+        var newerVersions = validReleases.Where(x =>
+        {
+            if (x.TagName is null) return false;
+
+            string normalizedRepoVersion = NormalizeVersion(x.TagName);
+            string normalizedAppVersion = NormalizeVersion(app.Version ?? "");
+
+            return normalizedRepoVersion.IsNewerThan(normalizedAppVersion);
+        }).Select(x => new AppVersion()
+        {
+            Body = x.Body,
+            Name = x.Name,
+            Prerelease = x.Prerelease,
+            VersionNumber = x.TagName,
+            Breaking = false,
+        }).ToList();
 
         // Manually add the applications to the read-only list
         foreach (var nv in newerVersions)

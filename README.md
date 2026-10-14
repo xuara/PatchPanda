@@ -48,7 +48,7 @@ PatchPanda requires the following env vars to function.
 
 General
 
-- BaseUrl - The base URL of PatchPanda, this will be used for creating clickable URLs in notifications (e.g. http://localhost:5093)
+- BaseUrl - The base URL of PatchPanda, this will be used for creating clickable URLs in notifications (e.g. <http://localhost:5093>)
 
 GitHub
 
