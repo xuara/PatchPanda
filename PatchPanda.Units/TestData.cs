@@ -1,34 +1,34 @@
 ﻿namespace PatchPanda.Units;
 
-public static class TestData
+internal static class TestData
 {
-    public const string IMAGE = "example/image:v1.0.0";
-    public const string IMAGE_NEW_VERSION = "example/image:v1.1.0";
+    internal const string IMAGE = "example/image:v1.0.0";
+    internal const string ImageNewVersion = "example/image:v1.1.0";
 
-    public const string VERSION = "v1.0.0";
-    public const string NEW_VERSION = "v1.1.0";
+    internal const string VERSION = "v1.0.0";
+    internal const string NewVersion = "v1.1.0";
 
-    public const string REGEX = "^v\\d+\\.\\d+\\.\\d+$";
-    public const string SHA = "sha256:blabla";
+    internal const string REGEX = "^v\\d+\\.\\d+\\.\\d+$";
+    internal const string SHA = "sha256:blabla";
 
-    public const string UPTIME = "Up 1 hour";
+    internal const string UPTIME = "Up 1 hour";
 
-    public const string GITHUB_OWNER = "some";
-    public const string GITHUB_REPO = "repo";
-    public const string GITHUB_URL = "https://github.com/some/repo";
-    public const string RELEASE_TAG = "v1.2.3";
+    internal const string GithubOwner = "some";
+    internal const string GithubRepo = "repo";
+    internal const string GithubUrl = "https://github.com/some/repo";
+    internal const string ReleaseTag = "v1.2.3";
 
-    public const string OWNER_A = "ownera";
-    public const string REPO_A = "repoa";
-    public const string URL_A = "https://github.com/ownera/repoa";
-    public const string OWNER_B = "ownerb";
-    public const string REPO_B = "repob";
-    public const string URL_B = "https://github.com/ownerb/repob";
-    public const string MULTI_IMAGE = "ghcr.io/ownera/repoa:1.0.0,https://github.com/ownerb/repob";
-    public const string RELEASE_TAG_A = "v1.0.0";
-    public const string RELEASE_TAG_B = "v2.0.0";
-    public const string ALPINE_IMAGE = "alpine:3.16";
+    internal const string OwnerA = "ownera";
+    internal const string RepoA = "repoa";
+    internal const string UrlA = "https://github.com/ownera/repoa";
+    internal const string OwnerB = "ownerb";
+    internal const string RepoB = "repob";
+    internal const string UrlB = "https://github.com/ownerb/repob";
+    internal const string MultiImage = "ghcr.io/ownera/repoa:1.0.0,https://github.com/ownerb/repob";
+    internal const string ReleaseTagA = "v1.0.0";
+    internal const string ReleaseTagB = "v2.0.0";
+    internal const string AlpineImage = "alpine:3.16";
 
-    public const string DOT_OWNER = "dgtlmoon";
-    public const string DOT_REPO = "changedetection.io";
+    internal const string DotOwner = "dgtlmoon";
+    internal const string DotRepo = "changedetection.io";
 }

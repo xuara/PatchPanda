@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Components;
 
 namespace PatchPanda.Web.Helpers;
 
-public static class PresenterHelper
+internal static class PresenterHelper
 {
     public static MarkupString ToMarkupString(this string input)
     {

@@ -3,7 +3,7 @@ using PatchPanda.Web.Services.Background;
 
 namespace PatchPanda.Web;
 
-public sealed partial class Program
+internal sealed partial class Program
 {
     private static async Task Main(string[] args)
     {
@@ -11,26 +11,56 @@ public sealed partial class Program
 
         // Add services to the container.
         builder.Services.AddRazorComponents().AddInteractiveServerComponents();
-
         builder.Services.AddHttpClient();
         builder.Services.AddControllers();
         builder.Services.AddSingleton<DockerService>();
-        builder.Services.AddSingleton<IPortainerService, PortainerService>();
+
+        builder.Services.AddSingleton<IPortainerService>(sp =>
+            new PortainerService(
+                sp.GetRequiredService<IConfiguration>(),
+                sp.GetRequiredService<ILogger<PortainerService>>()
+            ));
+
         builder.Services.AddSingleton<IVersionService, VersionService>();
-        builder.Services.AddSingleton<IDiscordService, DiscordService>();
+
+        builder.Services.AddSingleton<IDiscordService>(sp =>
+            new DiscordService(
+                sp.GetRequiredService<IConfiguration>(),
+                sp.GetRequiredService<ILogger<DiscordService>>()
+            ));
+
         builder.Services.AddSingleton<IAppriseService, AppriseService>();
-        builder.Services.AddSingleton<INotificationService, NotificationService>();
+
+        builder.Services.AddSingleton<INotificationService>(sp =>
+            new NotificationService(
+                sp.GetRequiredService<IDiscordService>(),
+                sp.GetRequiredService<IAppriseService>(),
+                sp.GetRequiredService<ILogger<NotificationService>>()
+            ));
+
         builder.Services.AddSingleton<IAiService, OllamaService>();
-        builder.Services.AddSingleton<UpdateService>();
+
+        builder.Services.AddSingleton<UpdateService>(sp =>
+            new UpdateService(
+                sp.GetRequiredService<DockerService>(),
+                sp.GetRequiredService<IDbContextFactory<DataContext>>(),
+                sp.GetRequiredService<IFileService>(),
+                sp.GetRequiredService<ILogger<UpdateService>>(),
+                sp.GetRequiredService<IPortainerService>(),
+                sp.GetRequiredService<IVersionService>(),
+                sp.GetRequiredService<JobRegistry>(),
+                sp.GetRequiredService<INotificationService>()
+            ));
+
         builder.Services.AddSingleton<IFileService, SystemFileService>();
         builder.Services.AddSingleton<JobRegistry>();
         builder.Services.AddSingleton<JobQueue>();
         builder.Services.AddHostedService<VersionCheckHostedService>();
         builder.Services.AddHostedService<UpdateBackgroundService>();
 
-        var baseUrl = builder.Configuration.GetValue<string?>(Constants.VariableKeys.BASE_URL);
+        var baseUrl = builder.Configuration.GetValue<string?>(VariableKeys.BaseUrl);
 
-        Constants.BASE_URL = baseUrl?.TrimEnd('/');
+        Constants.BaseUrl = baseUrl?.TrimEnd('/');
 
 #if DEBUG
         builder.Services.AddDbContextFactory<DataContext>(CreateDebugDatabaseAtWorkingFolder);
@@ -45,7 +75,7 @@ public sealed partial class Program
             .CreateDbContextAsync();
 
         if (dbContext.Database.IsRelational())
-            dbContext.Database.Migrate();
+            await dbContext.Database.MigrateAsync();
 
         // Configure the HTTP request pipeline.
         if (!app.Environment.IsDevelopment())
@@ -70,14 +100,14 @@ public sealed partial class Program
 
     private static void CreateDebugDatabaseAtWorkingFolder(DbContextOptionsBuilder opt)
     {
-        opt.UseSqlite($"Data Source={Constants.DB_NAME}");
+        opt.UseSqlite($"Data Source={Constants.DbName}");
         opt.EnableSensitiveDataLogging();
     }
 
     private static void CreateDatabaseAtRoot(DbContextOptionsBuilder opt)
     {
         Directory.CreateDirectory("/app/data");
-        opt.UseSqlite($"Data Source=/app/data/{Constants.DB_NAME}");
+        opt.UseSqlite($"Data Source=/app/data/{Constants.DbName}");
     }
 
     private static async Task ValidatePortainerAccessToken(IPortainerService portainerService)

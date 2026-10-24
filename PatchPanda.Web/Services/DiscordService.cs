@@ -3,35 +3,27 @@ using System.Text.Json;
 
 namespace PatchPanda.Web.Services;
 
-public class DiscordService : IDiscordService
+internal class DiscordService : IDiscordService
 {
     public string? WebhookUrl { get; }
 
     private readonly bool _isInitialized;
 
-    public DiscordService(IConfiguration configuration, ILogger<DiscordService> logger)
+    internal DiscordService(IConfiguration configuration, ILogger<DiscordService> logger)
     {
         ArgumentNullException.ThrowIfNull(configuration);
         ArgumentNullException.ThrowIfNull(logger);
 
-        var webhookUrl = configuration.GetValue<string>(
-            Constants.VariableKeys.DISCORD_WEBHOOK_URL
-        )!;
-        logger.LogInformation(
-            "{WebhookKey}={WebhookUrl}",
-            Constants.VariableKeys.DISCORD_WEBHOOK_URL,
-            webhookUrl
-        );
+        var webhookUrl = configuration.GetValue<string>(VariableKeys.DiscordWebhookUrl) ?? Environment.GetEnvironmentVariable("DISCORD_WEBHOOK_URL");
+
+        logger.LogInformation("{WebhookKey}={WebhookUrl}", VariableKeys.DiscordWebhookUrl, webhookUrl);
 
         WebhookUrl = webhookUrl;
 
         if (string.IsNullOrWhiteSpace(webhookUrl))
         {
             _isInitialized = false;
-            logger.LogInformation(
-                "{WebhookKey} configuration is missing, DiscordService is not initialized.",
-                Constants.VariableKeys.DISCORD_WEBHOOK_URL
-            );
+            logger.LogInformation("{WebhookKey} configuration is missing, DiscordService is not initialized.", VariableKeys.DiscordWebhookUrl);
         }
         else
         {
@@ -76,7 +68,7 @@ public class DiscordService : IDiscordService
                 await Task.Delay(1000);
             }
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             throw new FailedNotificationException(WebhookUrl, ex);
         }
@@ -88,12 +80,12 @@ public class DiscordService : IDiscordService
         var payload = new
         {
             content,
-            username = Constants.APP_NAME,
+            username = Constants.AppName,
             flags = 4
         };
         var jsonPayload = JsonSerializer.Serialize(payload);
-        var httpContent = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
-        var response = await httpClient.PostAsync(WebhookUrl, httpContent);
+        using var httpContent = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+        using var response = await httpClient.PostAsync(new Uri(WebhookUrl!), httpContent);
         response.EnsureSuccessStatusCode();
     }
 }

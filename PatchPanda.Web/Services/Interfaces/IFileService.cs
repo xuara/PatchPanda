@@ -1,6 +1,6 @@
 ﻿namespace PatchPanda.Web.Services.Interfaces
 {
-    public interface IFileService
+    internal interface IFileService
     {
         bool Exists(string? path);
         string ReadAllText(string path);

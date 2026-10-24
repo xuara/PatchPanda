@@ -1,6 +1,6 @@
 namespace PatchPanda.Web.Entities;
 
-public class MultiContainerApp : AbstractEntity
+internal class MultiContainerApp : AbstractEntity
 {
     public required string AppName { get; set; }
 

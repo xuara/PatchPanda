@@ -15,7 +15,7 @@ namespace PatchPanda.Web.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "9.0.10");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.0");
 
             modelBuilder.Entity("AppVersionContainer", b =>
                 {
@@ -38,11 +38,6 @@ namespace PatchPanda.Web.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Value")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("TEXT");
-
                     b.HasKey("Key");
 
                     b.ToTable("AppSettings");
@@ -53,45 +48,6 @@ namespace PatchPanda.Web.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
-
-                    b.Property<bool?>("AIBreaking")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("AISummary")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Body")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("Breaking")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("DateDiscovered")
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("Ignored")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool?>("IsSuspectedMalicious")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("Notified")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("Prerelease")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("SecurityAnalysis")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("VersionNumber")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 

@@ -26,8 +26,8 @@ public class ParsingHelperTests
         var stack = Helper.GetTestStack();
         var container = stack.Apps[0];
         container.OverrideGitHubRepo = new Tuple<string, string>(
-            TestData.GITHUB_OWNER,
-            TestData.GITHUB_REPO
+            TestData.GithubOwner,
+            TestData.GithubRepo
         );
 
         var response = new ContainerListResponse { Image = TestData.IMAGE };
@@ -44,7 +44,7 @@ public class ParsingHelperTests
         await container.SetGitHubRepo(response, versionService, logger);
 
         Assert.Equal(
-            new Tuple<string, string>(TestData.GITHUB_OWNER, TestData.GITHUB_REPO),
+            new Tuple<string, string>(TestData.GithubOwner, TestData.GithubRepo),
             container.OverrideGitHubRepo
         );
         Assert.Null(container.GitHubRepo);
@@ -56,7 +56,7 @@ public class ParsingHelperTests
         var stack = Helper.GetTestStack(TestData.VERSION, null, TestData.IMAGE);
         var container = stack.Apps[0];
 
-        var response = new ContainerListResponse { Image = TestData.ALPINE_IMAGE };
+        var response = new ContainerListResponse { Image = TestData.AlpineImage };
 
         var versionService = new VersionService(
             _logger.Object,
@@ -79,9 +79,9 @@ public class ParsingHelperTests
         var stack = Helper.GetTestStack(TestData.VERSION, null, TestData.IMAGE);
         var container = stack.Apps[0];
 
-        var response = new ContainerListResponse { Image = TestData.GITHUB_URL };
+        var response = new ContainerListResponse { Image = TestData.GithubUrl };
 
-        var release = CreateRelease(TestData.RELEASE_TAG, TestData.GITHUB_URL);
+        var release = CreateRelease(TestData.ReleaseTag, TestData.GithubUrl);
 
         var versionServiceMock = new Mock<IVersionService>();
 
@@ -89,7 +89,7 @@ public class ParsingHelperTests
             .Setup(vs =>
                 vs.GetVersions(
                     It.Is<Tuple<string, string>>(t =>
-                        t.Item1 == TestData.GITHUB_OWNER && t.Item2 == TestData.GITHUB_REPO
+                        t.Item1 == TestData.GithubOwner && t.Item2 == TestData.GithubRepo
                     )
                 )
             )
@@ -100,11 +100,11 @@ public class ParsingHelperTests
         await container.SetGitHubRepo(response, versionServiceMock.Object, logger);
 
         Assert.Equal(
-            new Tuple<string, string>(TestData.GITHUB_OWNER, TestData.GITHUB_REPO),
+            new Tuple<string, string>(TestData.GithubOwner, TestData.GithubRepo),
             container.GitHubRepo
         );
         Assert.Equal(
-            VersionHelper.BuildRegexFromVersion(TestData.RELEASE_TAG),
+            VersionHelper.BuildRegexFromVersion(TestData.ReleaseTag),
             container.GitHubVersionRegex
         );
     }
@@ -115,10 +115,10 @@ public class ParsingHelperTests
         var stack = Helper.GetTestStack(TestData.VERSION, null, TestData.IMAGE);
         var container = stack.Apps[0];
 
-        var response = new ContainerListResponse { Image = TestData.MULTI_IMAGE };
+        var response = new ContainerListResponse { Image = TestData.MultiImage };
 
-        var relA1 = CreateRelease(TestData.RELEASE_TAG_A, TestData.URL_A);
-        var relB1 = CreateRelease(TestData.RELEASE_TAG_B, TestData.URL_B);
+        var relA1 = CreateRelease(TestData.ReleaseTagA, TestData.UrlA);
+        var relB1 = CreateRelease(TestData.ReleaseTagB, TestData.UrlB);
 
         var versionServiceMock = new Mock<IVersionService>();
 
@@ -126,7 +126,7 @@ public class ParsingHelperTests
             .Setup(vs =>
                 vs.GetVersions(
                     It.Is<Tuple<string, string>>(t =>
-                        t.Item1 == TestData.OWNER_A && t.Item2 == TestData.REPO_A
+                        t.Item1 == TestData.OwnerA && t.Item2 == TestData.RepoA
                     )
                 )
             )
@@ -136,7 +136,7 @@ public class ParsingHelperTests
             .Setup(vs =>
                 vs.GetVersions(
                     It.Is<Tuple<string, string>>(t =>
-                        t.Item1 == TestData.OWNER_B && t.Item2 == TestData.REPO_B
+                        t.Item1 == TestData.OwnerB && t.Item2 == TestData.RepoB
                     )
                 )
             )
@@ -147,16 +147,16 @@ public class ParsingHelperTests
         await container.SetGitHubRepo(response, versionServiceMock.Object, logger);
 
         Assert.Equal(
-            new Tuple<string, string>(TestData.OWNER_A, TestData.REPO_A),
+            new Tuple<string, string>(TestData.OwnerA, TestData.RepoA),
             container.GitHubRepo
         );
         Assert.NotNull(container.SecondaryGitHubRepos);
         Assert.Contains(
-            new Tuple<string, string>(TestData.OWNER_B, TestData.REPO_B),
+            new Tuple<string, string>(TestData.OwnerB, TestData.RepoB),
             container.SecondaryGitHubRepos
         );
         Assert.Equal(
-            VersionHelper.BuildRegexFromVersion(TestData.RELEASE_TAG_A),
+            VersionHelper.BuildRegexFromVersion(TestData.ReleaseTagA),
             container.GitHubVersionRegex
         );
     }
@@ -170,10 +170,10 @@ public class ParsingHelperTests
         var response = new ContainerListResponse
         {
             Image =
-                $"ghcr.io/{TestData.GITHUB_OWNER}/{TestData.GITHUB_REPO}:1.0,https://github.com/{TestData.OWNER_B}/{TestData.REPO_B}",
+                $"ghcr.io/{TestData.GithubOwner}/{TestData.GithubRepo}:1.0,https://github.com/{TestData.OwnerB}/{TestData.RepoB}",
         };
 
-        var sharedRelease = CreateRelease(TestData.RELEASE_TAG, TestData.GITHUB_URL);
+        var sharedRelease = CreateRelease(TestData.ReleaseTag, TestData.GithubUrl);
 
         var versionServiceMock = new Mock<IVersionService>();
 
@@ -181,7 +181,7 @@ public class ParsingHelperTests
             .Setup(vs =>
                 vs.GetVersions(
                     It.Is<Tuple<string, string>>(t =>
-                        t.Item1 == TestData.GITHUB_OWNER && t.Item2 == TestData.GITHUB_REPO
+                        t.Item1 == TestData.GithubOwner && t.Item2 == TestData.GithubRepo
                     )
                 )
             )
@@ -191,7 +191,7 @@ public class ParsingHelperTests
             .Setup(vs =>
                 vs.GetVersions(
                     It.Is<Tuple<string, string>>(t =>
-                        t.Item1 == TestData.OWNER_B && t.Item2 == TestData.REPO_B
+                        t.Item1 == TestData.OwnerB && t.Item2 == TestData.RepoB
                     )
                 )
             )
@@ -202,12 +202,12 @@ public class ParsingHelperTests
         await container.SetGitHubRepo(response, versionServiceMock.Object, logger);
 
         Assert.Equal(
-            new Tuple<string, string>(TestData.GITHUB_OWNER, TestData.GITHUB_REPO),
+            new Tuple<string, string>(TestData.GithubOwner, TestData.GithubRepo),
             container.GitHubRepo
         );
         Assert.Null(container.SecondaryGitHubRepos);
         Assert.Equal(
-            VersionHelper.BuildRegexFromVersion(TestData.RELEASE_TAG),
+            VersionHelper.BuildRegexFromVersion(TestData.ReleaseTag),
             container.GitHubVersionRegex
         );
     }
@@ -215,15 +215,15 @@ public class ParsingHelperTests
     [Fact]
     public async Task SetGitHubRepo_SetsRepo_WhenRepositoryContainsDot()
     {
-        var image = $"ghcr.io/{TestData.DOT_OWNER}/{TestData.DOT_REPO}:{TestData.VERSION}";
-        var repoUrl = $"https://github.com/{TestData.DOT_OWNER}/{TestData.DOT_REPO}";
+        var image = $"ghcr.io/{TestData.DotOwner}/{TestData.DotRepo}:{TestData.VERSION}";
+        var repoUrl = $"https://github.com/{TestData.DotOwner}/{TestData.DotRepo}";
 
         var stack = Helper.GetTestStack(TestData.VERSION, null, image);
         var container = stack.Apps[0];
 
         var response = new ContainerListResponse { Image = image };
 
-        var release = CreateRelease(TestData.NEW_VERSION, repoUrl);
+        var release = CreateRelease(TestData.NewVersion, repoUrl);
 
         var versionServiceMock = new Mock<IVersionService>();
 
@@ -231,7 +231,7 @@ public class ParsingHelperTests
             .Setup(vs =>
                 vs.GetVersions(
                     It.Is<Tuple<string, string>>(t =>
-                        t.Item1 == TestData.DOT_OWNER && t.Item2 == TestData.DOT_REPO
+                        t.Item1 == TestData.DotOwner && t.Item2 == TestData.DotRepo
                     )
                 )
             )
@@ -242,11 +242,11 @@ public class ParsingHelperTests
         await container.SetGitHubRepo(response, versionServiceMock.Object, logger);
 
         Assert.Equal(
-            new Tuple<string, string>(TestData.DOT_OWNER, TestData.DOT_REPO),
+            new Tuple<string, string>(TestData.DotOwner, TestData.DotRepo),
             container.GitHubRepo
         );
         Assert.Equal(
-            VersionHelper.BuildRegexFromVersion(TestData.NEW_VERSION),
+            VersionHelper.BuildRegexFromVersion(TestData.NewVersion),
             container.GitHubVersionRegex
         );
     }

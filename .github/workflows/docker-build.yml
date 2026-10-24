@@ -1,6 +1,30 @@
 name: Docker Build Check
 
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+    branches:
+      - "**" # Run on every branch push
+      - "!main" # EXCEPT when pushing to main (handled by PR merge)
+    paths:
+      - "PatchPanda.Web/**"
+      - "Dockerfile"
+      - ".github/workflows/docker-build.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "PatchPanda.Web/**"
+      - "Dockerfile"
+      - ".github/workflows/docker-build.yml"
+  workflow_dispatch:
+
+# Cancels the older run if a new commit is pushed while a build is already active for that same branch/PR.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build:

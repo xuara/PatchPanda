@@ -5,7 +5,7 @@
 namespace PatchPanda.Web.Migrations
 {
     /// <inheritdoc />
-    public partial class PortainerSupport : Migration
+    internal partial class PortainerSupport : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

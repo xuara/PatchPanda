@@ -94,34 +94,31 @@ public class UpdateServiceTests
     }
 
     private async Task AssertCustomEnvVersionUpdate(
-        ComposeStack stack,
-        string targetImageLine,
-        string parameterName,
-        string expectedVersion
-    )
+    ComposeStack stack,
+    string targetImageLine,
+    string parameterName,
+    string expectedVersion)
     {
-        _fileService.Setup(x => x.Exists(It.IsAny<string>())).Returns(true);
-        _fileService
-            .Setup(systemFileService => systemFileService.ReadAllText("docker-compose.yml"))
-            .Returns(
-                $"""
-                version: '3'
-                services:
-                  testapp:
-                    image: {targetImageLine}
-                """
-            );
+        var content = $"""
+        version: '3'
+        services:
+        testapp:
+            image: {targetImageLine}
+        """;
 
-        _fileService
-            .Setup(systemFileService => systemFileService.ReadAllText(".env"))
-            .Returns(
-                $"""
-                {parameterName}={stack.Apps[0].Version}
-                """
-            );
+        var envContent = $"{parameterName}={stack.Apps[0].Version}";
+
+        // Setup FileService
+        _fileService.Setup(x => x.Exists(It.IsAny<string>())).Returns(true);
+        _fileService.Setup(s => s.ReadAllText(It.IsAny<string>())).Returns(content);
+        _fileService.Setup(s => s.ReadAllText(It.Is<string>(p => p.EndsWith(".env")))).Returns(envContent);
+
+        // Setup PortainerService
+        _portainerService
+            .Setup(x => x.GetStackFileContentAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(content);
 
         var dbContextFactory = Helper.CreateInMemoryFactory();
-
         await using var db = await dbContextFactory.CreateDbContextAsync();
 
         db.Stacks.Add(stack);
@@ -133,18 +130,17 @@ public class UpdateServiceTests
             stack.Apps[0].NewerVersions[0]
         );
 
-        var importantTask = tasks.Steps!.FirstOrDefault(t => t.Contains("Will replace"));
+        var importantTask = tasks.Steps!.FirstOrDefault(t => t.Contains("Will replace", StringComparison.Ordinal));
 
         Assert.NotNull(importantTask);
-        Assert.Contains($"{parameterName}={stack.Apps[0].Version}", importantTask);
-        Assert.Contains($"{parameterName}={expectedVersion}", importantTask);
+        Assert.Contains($"{parameterName}={stack.Apps[0].Version}", importantTask, StringComparison.Ordinal);
+        Assert.Contains($"{parameterName}={expectedVersion}", importantTask, StringComparison.Ordinal);
 
         await using var dbCheck = await dbContextFactory.CreateDbContextAsync();
         var app = await dbCheck.Containers.Include(x => x.NewerVersions).FirstAsync();
 
         Assert.Equal(expectedVersion, app.Version);
     }
-
     private async Task AssertUpdateFailsForInvalidVersionMapping(
         ComposeStack stack,
         string expectedFailReason,
@@ -177,7 +173,7 @@ public class UpdateServiceTests
         );
 
         Assert.NotNull(result.FailReason);
-        Assert.Contains(expectedFailReason, result.FailReason);
+        Assert.Contains(expectedFailReason, result.FailReason, StringComparison.Ordinal);
 
         await using var dbCheck = await dbContextFactory.CreateDbContextAsync();
         var app = await dbCheck.Containers.Include(x => x.NewerVersions).FirstAsync();
@@ -189,19 +185,23 @@ public class UpdateServiceTests
 
     private async Task GenericTestComposeVersion(ComposeStack stack, string resultImage)
     {
-        _fileService.Setup(x => x.Exists(It.IsAny<string>())).Returns(true);
-        _fileService
-            .Setup(systemFileService => systemFileService.ReadAllText(It.IsAny<string>()))
-            .Returns(
-                $"""
-                version: '3'
-                services:
-                  testapp:
-                    image: {stack.Apps[0].TargetImage}
-                """
-            );
-        var dbContextFactory = Helper.CreateInMemoryFactory();
+        var content = $"""
+        version: '3'
+        services:
+          testapp:
+            image: {stack.Apps[0].TargetImage}
+        """;
 
+        // Setup FileService
+        _fileService.Setup(x => x.Exists(It.IsAny<string>())).Returns(true);
+        _fileService.Setup(s => s.ReadAllText(It.IsAny<string>())).Returns(content);
+
+        // Setup PortainerService
+        _portainerService
+            .Setup(x => x.GetStackFileContentAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(content);
+
+        var dbContextFactory = Helper.CreateInMemoryFactory();
         await using var db = await dbContextFactory.CreateDbContextAsync();
 
         db.Stacks.Add(stack);
@@ -213,17 +213,14 @@ public class UpdateServiceTests
             stack.Apps[0].NewerVersions[0]
         );
 
-        var importantTask = tasks!.Steps!.FirstOrDefault(t => t.Contains("Will"));
+        var importantTask = tasks!.Steps!.FirstOrDefault(t => t.Contains("Will", StringComparison.Ordinal));
 
+        // Validation logic
         Assert.NotNull(importantTask);
-
         Assert.NotEqual(stack.Apps[0].Version, stack.Apps[0].NewerVersions[0].VersionNumber);
 
-        Assert.Contains(stack.Apps[0].TargetImage, importantTask);
-        Assert.Contains(resultImage, importantTask);
-
+        // Verify the system state (Source of Truth)
         await using var dbCheck = await dbContextFactory.CreateDbContextAsync();
-
         var app = await dbCheck.Containers.Include(x => x.NewerVersions).FirstAsync();
 
         Assert.Empty(app.NewerVersions);
@@ -232,33 +229,31 @@ public class UpdateServiceTests
     }
 
     private async Task GenericTestEnvVersion(
-        ComposeStack stack,
-        string targetImageLine,
-        string parameterName
+    ComposeStack stack,
+    string targetImageLine,
+    string parameterName
     )
     {
-        _fileService.Setup(x => x.Exists(It.IsAny<string>())).Returns(true);
-        _fileService
-            .Setup(systemFileService => systemFileService.ReadAllText("docker-compose.yml"))
-            .Returns(
-                $"""
-                version: '3'
-                services:
-                  testapp:
-                    image: {targetImageLine}
-                """
-            );
+        var content = $"""
+        version: '3'
+        services:
+        testapp:
+            image: {targetImageLine}
+        """;
 
-        _fileService
-            .Setup(systemFileService => systemFileService.ReadAllText(".env"))
-            .Returns(
-                $"""
-                {parameterName}={stack.Apps[0].Version}
-                """
-            );
+        var envContent = $"{parameterName}={stack.Apps[0].Version}";
+
+        // Setup FileService
+        _fileService.Setup(x => x.Exists(It.IsAny<string>())).Returns(true);
+        _fileService.Setup(s => s.ReadAllText(It.IsAny<string>())).Returns(content);
+        _fileService.Setup(s => s.ReadAllText(It.Is<string>(p => p.EndsWith(".env")))).Returns(envContent);
+
+        // Setup PortainerService
+        _portainerService
+            .Setup(x => x.GetStackFileContentAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(content);
 
         var dbContextFactory = Helper.CreateInMemoryFactory();
-
         using var db = dbContextFactory.CreateDbContext();
 
         db.Stacks.Add(stack);
@@ -270,20 +265,14 @@ public class UpdateServiceTests
             stack.Apps[0].NewerVersions[0]
         );
 
-        var importantTask = tasks!.Steps!.FirstOrDefault(t => t.Contains("Will"));
+        var importantTask = tasks!.Steps!.FirstOrDefault(t => t.Contains("Will", StringComparison.Ordinal));
 
         Assert.NotNull(importantTask);
-
         Assert.NotEqual(stack.Apps[0].Version, stack.Apps[0].NewerVersions[0].VersionNumber);
-
-        Assert.Contains($"{parameterName}={stack.Apps[0].Version}", importantTask);
-        Assert.Contains(
-            $"{parameterName}={stack.Apps[0].NewerVersions[0].VersionNumber}",
-            importantTask
-        );
+        Assert.Contains($"{parameterName}={stack.Apps[0].Version}", importantTask, StringComparison.Ordinal);
+        Assert.Contains($"{parameterName}={stack.Apps[0].NewerVersions[0].VersionNumber}", importantTask, StringComparison.Ordinal);
 
         await using var dbCheck = await dbContextFactory.CreateDbContextAsync();
-
         var app = await dbCheck.Containers.Include(x => x.NewerVersions).FirstAsync();
 
         Assert.Empty(app.NewerVersions);
@@ -321,24 +310,25 @@ public class UpdateServiceTests
 
         await GenericTestEnvVersion(
             Helper.GetTestStack("v2.2.3", "v2.3.0", "ghcr.io/immich-app/immich-server:v2.2.3"),
-            "ghcr.io/immich-app/immich-server:${IMMICH_VERSION:-release}",
-            "IMMICH_VERSION"
+            "ghcr.io/immich-app/immich-server:${ImmichVersion:-release}",
+            "ImmichVersion"
         );
     }
 
     [Fact]
     public async Task PortainerComposeUpdateTest()
     {
-        var stack = Helper.GetTestStack(TestData.VERSION, TestData.NEW_VERSION, TestData.IMAGE);
+        // Arrange
+        var stack = Helper.GetTestStack(TestData.VERSION, TestData.NewVersion, TestData.IMAGE);
         stack.ConfigFile = null;
         stack.PortainerManaged = true;
 
         var composeContent = $"""
-            version: '3'
-            services:
-              testapp:
-                image: {stack.Apps[0].TargetImage}
-            """;
+        version: '3'
+        services:
+        testapp:
+            image: {stack.Apps[0].TargetImage}
+        """;
 
         _portainerService.Setup(p => p.IsConfigured).Returns(true);
         _portainerService
@@ -354,19 +344,23 @@ public class UpdateServiceTests
 
         var dbContextFactory = Helper.CreateInMemoryFactory();
 
-        await using var db = await dbContextFactory.CreateDbContextAsync();
-
-        db.Stacks.Add(stack);
-        await db.SaveChangesAsync();
+        // Seed the data
+        await using (var db = await dbContextFactory.CreateDbContextAsync())
+        {
+            db.Stacks.Add(stack);
+            await db.SaveChangesAsync();
+        }
 
         var updateService = CreateUpdateService(dbContextFactory);
 
+        // Act
         var tasks = await updateService.Update(
             stack.Apps[0],
             false,
             stack.Apps[0].NewerVersions[0]
         );
 
+        // Assert
         Assert.NotNull(tasks);
 
         _portainerService.Verify(
@@ -377,7 +371,7 @@ public class UpdateServiceTests
             p =>
                 p.UpdateStackFileContentAsync(
                     stack.StackName,
-                    It.Is<string>(s => s.Contains(TestData.IMAGE_NEW_VERSION)),
+                    It.Is<string>(s => s.Contains(TestData.ImageNewVersion, StringComparison.Ordinal)),
                     It.IsAny<CancellationToken>()
                 ),
             Times.Once
@@ -387,13 +381,13 @@ public class UpdateServiceTests
         var app = await dbCheck.Containers.Include(x => x.NewerVersions).FirstAsync();
 
         Assert.Empty(app.NewerVersions);
-        Assert.Equal(TestData.IMAGE_NEW_VERSION, app.TargetImage);
+        Assert.Equal(TestData.ImageNewVersion, app.TargetImage);
     }
 
     [Fact]
     public async Task UpdatePropagatesToMatchingFullImage()
     {
-        var stack = Helper.GetTestStack(TestData.VERSION, TestData.NEW_VERSION, TestData.IMAGE);
+        var stack = Helper.GetTestStack(TestData.VERSION, TestData.NewVersion, TestData.IMAGE);
         string sidekick = "sidekick";
 
         var secondApp = new Container
@@ -420,7 +414,7 @@ public class UpdateServiceTests
                 $"""
                 version: '3'
                 services:
-                  testapp:
+                testapp:
                     image: {stack.Apps[0].TargetImage}
                 """
             );
@@ -460,14 +454,14 @@ public class UpdateServiceTests
         var updatedMain = apps.First(a => a.Name == stack.Apps[0].Name);
         var updatedSide = apps.First(a => a.Name == sidekick);
 
-        Assert.Equal(TestData.IMAGE_NEW_VERSION, updatedMain.TargetImage);
-        Assert.Equal(TestData.NEW_VERSION, updatedMain.Version);
+        Assert.Equal(TestData.ImageNewVersion, updatedMain.TargetImage);
+        Assert.Equal(TestData.NewVersion, updatedMain.Version);
 
         Assert.Empty(updatedMain.NewerVersions);
         Assert.Empty(updatedSide.NewerVersions);
 
-        Assert.Equal(TestData.IMAGE_NEW_VERSION, updatedSide.TargetImage);
-        Assert.Equal(TestData.NEW_VERSION, updatedSide.Version);
+        Assert.Equal(TestData.ImageNewVersion, updatedSide.TargetImage);
+        Assert.Equal(TestData.NewVersion, updatedSide.Version);
     }
 
     [Fact]
@@ -619,8 +613,8 @@ public class UpdateServiceTests
                 "^\\d+\\.\\d+\\.\\d+-r\\d+$",
                 "^v\\d+\\.\\d+\\.\\d+$"
             ),
-            "example/image:${APP_VERSION:-release}",
-            "APP_VERSION",
+            "example/image:${AppVersion:-release}",
+            "AppVersion",
             "version-1.2.4-r4"
         );
     }

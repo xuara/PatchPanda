@@ -1,30 +1,30 @@
 namespace PatchPanda.Web.Entities;
 
-public class AppVersion : AbstractEntity
+internal class AppVersion : AbstractEntity
 {
-    public required string VersionNumber { get; set; }
+    internal required string VersionNumber { get; set; }
 
-    public required bool Prerelease { get; set; }
+    internal required bool Prerelease { get; set; }
 
-    public required bool Breaking { get; set; }
+    internal required bool Breaking { get; set; }
 
-    public required string Name { get; set; }
+    internal required string Name { get; set; }
 
-    public required string Body { get; set; }
+    internal required string Body { get; set; }
 
-    public string? AISummary { get; set; }
+    internal string? AISummary { get; set; }
 
-    public bool? AIBreaking { get; set; }
+    internal bool? AIBreaking { get; set; }
 
-    public bool Notified { get; set; }
+    internal bool Notified { get; set; }
 
-    public bool Ignored { get; set; }
+    internal bool Ignored { get; set; }
 
-    public DateTime DateDiscovered { get; set; } = DateTime.Now;
+    internal DateTime DateDiscovered { get; set; } = DateTime.Now;
 
-    public virtual List<Container> Applications { get; set; } = [];
+    internal virtual List<Container> Applications { get; } = [];
 
-    public string? SecurityAnalysis { get; set; }
+    internal string? SecurityAnalysis { get; set; }
 
-    public bool? IsSuspectedMalicious { get; set; }
+    internal bool? IsSuspectedMalicious { get; set; }
 }

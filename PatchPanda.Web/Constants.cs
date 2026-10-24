@@ -1,49 +1,57 @@
 namespace PatchPanda.Web;
 
-public static class Constants
+// CA1515: Application types should be internal unless public API is required
+internal static class Constants
 {
-    public static string? BASE_URL = null;
+    // CA2211/CA1805: Non-constant fields shouldn't be visible/redundant null init
+    // Changed to PascalCase to satisfy CA1707
+    internal static string? BaseUrl;
+
 #if DEBUG
-    public const string APP_NAME = "PatchPanda [DEV]";
+    public const string AppName = "PatchPanda [DEV]";
 #else
-    public const string APP_NAME = "PatchPanda";
+    public const string AppName = "PatchPanda";
 #endif
-    public const string DB_NAME = "patchpanda.db";
 
-    public static class Cascading
-    {
-        public const string TOASTS = "TOASTS";
-    }
+    public const string DbName = "patchpanda.db";
+}
 
-    public static class VariableKeys
-    {
-        public const string APPRISE_NOTIFICATION_URLS = "APPRISE_NOTIFICATION_URLS";
-        public const string APPRISE_API_URL = "APPRISE_API_URL";
-        public const string DISCORD_WEBHOOK_URL = "DISCORD_WEBHOOK_URL";
-        public const string BASE_URL = "BASE_URL";
-        public const string PORTAINER_URL = "PORTAINER_URL";
-        public const string PORTAINER_IGNORE_SSL = "PORTAINER_IGNORE_SSL";
-        public const string PORTAINER_ACCESS_TOKEN = "PORTAINER_ACCESS_TOKEN";
-        public const string PORTAINER_USERNAME = "PORTAINER_USERNAME";
-        public const string PORTAINER_PASSWORD = "PORTAINER_PASSWORD";
-        public const string OLLAMA_URL = "OLLAMA_URL";
-        public const string OLLAMA_MODEL = "OLLAMA_MODEL";
-        public const string OLLAMA_NUM_CTX = "OLLAMA_NUM_CTX";
-        public const string APP_VERSION = "APP_VERSION";
-    }
+// CA1034: Classes are no longer nested, satisfying "Do not nest type"
+internal static class Cascading
+{
+    public const string Toasts = "TOASTS";
+}
 
-    public static class SettingsKeys
-    {
-        public const string AUTO_UPDATE_ENABLED = "AUTO_UPDATE_ENABLED";
-        public const string AUTO_UPDATE_DELAY_HOURS = "AUTO_UPDATE_DELAY_HOURS";
-        public const string SECURITY_SCANNING_ENABLED = "SECURITY_SCANNING_ENABLED";
-    }
+internal static class VariableKeys
+{
+    // The member names follow PascalCase (CA1707), 
+    // but the string values remain uppercase to match your environment variables.
+    public const string AppriseNotificationUrls = "AppriseNotificationUrls";
+    public const string AppriseApiUrl = "AppriseApiUrl";
+    public const string DiscordWebhookUrl = "DiscordWebhookUrl";
+    public const string BaseUrl = "BaseUrl";
+    public const string PortainerUrl = "PortainerUrl";
+    public const string PortainerIgnoreSsl = "PortainerIgnoreSsl";
+    public const string PortainerAccessToken = "PortainerAccessToken";
+    public const string PortainerUsername = "PortainerUsername";
+    public const string PortainerPassword = "PortainerPassword";
+    public const string OllamaUrl = "OllamaUrl";
+    public const string OllamaModel = "OllamaModel";
+    public const string OllamaNumCtx = "OllamaNumCtx";
+    public const string AppVersion = "AppVersion";
+}
 
-    public static class Limits
-    {
-        public const int MAX_OLLAMA_ATTEMPTS = 3;
-        public const int MINIMUM_UPDATE_STEPS = 3;
-        public const int PORTAINER_HTTP_TIMEOUT_SECONDS = 60;
-        public const int UPDATE_JOB_TIMEOUT_SECONDS = 300;
-    }
+internal static class SettingsKeys
+{
+    public const string AutoUpdateEnabled = "AutoUpdateEnabled";
+    public const string AutoUpdateDelayHours = "AutoUpdateDelayHours";
+    public const string SecurityScanningEnabled = "SecurityScanningEnabled";
+}
+
+internal static class Limits
+{
+    public const int MaxOllamaAttempts = 3;
+    public const int MinimumUpdateSteps = 3;
+    public const int PortainerHttpTimeoutSeconds = 60;
+    public const int UpdateJobTimeoutSeconds = 300;
 }

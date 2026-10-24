@@ -1,7 +1,7 @@
 @page "/settings"
 @inject IDbContextFactory<DataContext> _dbContextFactory
 
-<PageTitle>Settings - @Constants.APP_NAME</PageTitle>
+<PageTitle>Settings - @Constants.AppName</PageTitle>
 
 <h1>Settings</h1>
 
@@ -60,7 +60,7 @@ else
 
 @code {
 
-    [CascadingParameter(Name = Constants.Cascading.TOASTS)]
+    [CascadingParameter(Name = Cascading.Toasts)]
     public Toasts? Toasts { get; set; }
     
     private bool _isLoading = true;
@@ -79,17 +79,17 @@ else
         await using var db = await _dbContextFactory.CreateDbContextAsync();
         var settings = await db.AppSettings.ToDictionaryAsync(x => x.Key, x => x.Value);
 
-        if (settings.TryGetValue(Constants.SettingsKeys.AUTO_UPDATE_ENABLED, out var enabledStr) && bool.TryParse(enabledStr, out var enabled))
+        if (settings.TryGetValue(SettingsKeys.AutoUpdateEnabled, out var enabledStr) && bool.TryParse(enabledStr, out var enabled))
         {
             _autoUpdateEnabled = enabled;
         }
 
-        if (settings.TryGetValue(Constants.SettingsKeys.AUTO_UPDATE_DELAY_HOURS, out var delayStr) && int.TryParse(delayStr, out var delay))
+        if (settings.TryGetValue(SettingsKeys.AutoUpdateDelayHours, out var delayStr) && int.TryParse(delayStr, out var delay))
         {
             _autoUpdateDelayHours = delay;
         }
 
-        if (settings.TryGetValue(Constants.SettingsKeys.SECURITY_SCANNING_ENABLED, out var secEnabledStr) && bool.TryParse(secEnabledStr, out var secEnabled))
+        if (settings.TryGetValue(SettingsKeys.SecurityScanningEnabled, out var secEnabledStr) && bool.TryParse(secEnabledStr, out var secEnabled))
         {
             _securityScanningEnabled = secEnabled;
         }
@@ -100,7 +100,7 @@ else
         if (e.Value is bool val)
         {
             _autoUpdateEnabled = val;
-            await SaveSetting(Constants.SettingsKeys.AUTO_UPDATE_ENABLED, val.ToString());
+            await SaveSetting(SettingsKeys.AutoUpdateEnabled, val.ToString());
         }
     }
 
@@ -109,7 +109,7 @@ else
         if (int.TryParse(e.Value?.ToString(), out var val))
         {
             _autoUpdateDelayHours = val;
-            await SaveSetting(Constants.SettingsKeys.AUTO_UPDATE_DELAY_HOURS, val.ToString());
+            await SaveSetting(SettingsKeys.AutoUpdateDelayHours, val.ToString());
         }
     }
 
@@ -118,7 +118,7 @@ else
         if (e.Value is bool val)
         {
             _securityScanningEnabled = val;
-            await SaveSetting(Constants.SettingsKeys.SECURITY_SCANNING_ENABLED, val.ToString().ToLower());
+            await SaveSetting(SettingsKeys.SecurityScanningEnabled, val.ToString().ToLower());
         }
     }
 

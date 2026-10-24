@@ -1,6 +1,6 @@
 ﻿namespace PatchPanda.Web.Services.Interfaces;
 
-public interface IDiscordService
+internal interface IDiscordService
 {
     public string? WebhookUrl { get; }
     public bool IsInitialized { get; }

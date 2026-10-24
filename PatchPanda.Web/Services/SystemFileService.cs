@@ -1,6 +1,6 @@
 ﻿namespace PatchPanda.Web.Services;
 
-public class SystemFileService : IFileService
+internal class SystemFileService : IFileService
 {
     public virtual bool Exists(string? path) => File.Exists(path);
 

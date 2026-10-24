@@ -1,6 +1,6 @@
 namespace PatchPanda.Web.Helpers;
 
-public class MultiContainerAppDetector
+internal class MultiContainerAppDetector
 {
     public static void FillMultiContainerApps(ComposeStack stack, DataContext db)
     {

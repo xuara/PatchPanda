@@ -2,7 +2,7 @@ using System.Threading.Channels;
 
 namespace PatchPanda.Web.Helpers;
 
-public class JobQueue
+internal class JobQueue
 {
     private readonly Channel<AbstractJob> _channel;
 

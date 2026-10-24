@@ -1,6 +1,6 @@
 namespace PatchPanda.Web.Services.Interfaces;
 
-public interface IPortainerService
+internal interface IPortainerService
 {
     bool IsConfigured { get; }
 

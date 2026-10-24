@@ -1,8 +1,19 @@
 namespace PatchPanda.Web.Exceptions;
 
-public class RateLimitException(DateTimeOffset resetsAt, int limit) : Exception
+internal class RateLimitException : Exception
 {
-    public DateTimeOffset ResetsAt { get; } = resetsAt;
+    internal DateTimeOffset ResetsAt { get; }
+    internal int Limit { get; }
 
-    public int Limit { get; } = limit;
+    internal RateLimitException(DateTimeOffset resetsAt, int limit) 
+        : base($"Rate limit of {limit} reached. Resets at {resetsAt}.")
+    {
+        ResetsAt = resetsAt;
+        Limit = limit;
+    }
+
+    // Required standard constructors
+    internal RateLimitException() { }
+    internal RateLimitException(string message) : base(message) { }
+    internal RateLimitException(string message, Exception inner) : base(message, inner) { }
 }

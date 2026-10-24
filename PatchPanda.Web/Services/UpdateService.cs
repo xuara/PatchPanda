@@ -2,10 +2,9 @@ using System.Text.RegularExpressions;
 
 namespace PatchPanda.Web.Services;
 
-public class UpdateService
+internal partial class UpdateService
 {
     private const int MaxRollbackAttempts = 3;
-
     private readonly DockerService _dockerService;
     private readonly IDbContextFactory<DataContext> _dbContextFactory;
     private readonly IFileService _fileService;
@@ -15,7 +14,10 @@ public class UpdateService
     private readonly JobRegistry _jobRegistry;
     private readonly INotificationService _notificationService;
 
-    public UpdateService(
+    [GeneratedRegex(@"\${([a-zA-Z0-9\-_]+):-[a-zA-Z0-9\-_]+}")]
+    private static partial Regex EnvVariableRegex();
+
+    internal UpdateService(
         DockerService dockerService,
         IDbContextFactory<DataContext> dbContextFactory,
         IFileService fileService,
@@ -72,13 +74,13 @@ public class UpdateService
         }
     }
 
-    public bool IsUpdateAvailable(Container app) =>
+    internal bool IsUpdateAvailable(Container app) =>
         !app.IsSecondary
         && app.Regex is not null
         && app.GitHubVersionRegex is not null
         && app.Version is not null;
 
-    public async Task CheckAllForUpdates(CancellationToken cancellationToken = default)
+    internal async Task CheckAllForUpdates(CancellationToken cancellationToken = default)
     {
         await using var db = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
 
@@ -151,7 +153,7 @@ public class UpdateService
 
                                 await db.SaveChangesAsync(cancellationToken);
                             }
-                            catch (Exception ex)
+                            catch (Exception ex) when (ex is not OperationCanceledException)
                             {
                                 _logger.LogWarning(ex, "Failed saving notified flags");
                             }
@@ -188,7 +190,7 @@ public class UpdateService
         );
 
         if (
-            !settings.TryGetValue(Constants.SettingsKeys.AUTO_UPDATE_ENABLED, out var enabledStr)
+            !settings.TryGetValue(SettingsKeys.AutoUpdateEnabled, out var enabledStr)
             || !bool.TryParse(enabledStr, out var enabled)
             || !enabled
         )
@@ -196,8 +198,8 @@ public class UpdateService
 
         var delayHours = 0;
 
-        if (settings.TryGetValue(Constants.SettingsKeys.AUTO_UPDATE_DELAY_HOURS, out var delayStr))
-            int.TryParse(delayStr, out delayHours);
+        if (settings.TryGetValue(SettingsKeys.AutoUpdateDelayHours, out var delayStr))
+            _ = int.TryParse(delayStr, out delayHours);
 
         var threshold = DateTime.Now.AddHours(-delayHours);
 
@@ -325,7 +327,7 @@ public class UpdateService
         return message;
     }
 
-    public async Task<UpdatePlanModel> Update(
+    internal async Task<UpdatePlanModel> Update(
         Container app,
         bool planOnly,
         AppVersion targetVersion,
@@ -353,17 +355,13 @@ public class UpdateService
             ArgumentNullException.ThrowIfNull(app.GitHubVersionRegex);
             ArgumentNullException.ThrowIfNull(app.Version);
 
-            await using var db = await _dbContextFactory.CreateDbContextAsync(
-                CancellationToken.None
-            );
+            await using var db = await _dbContextFactory.CreateDbContextAsync(CancellationToken.None);
+
             var stack = await db.Stacks.FirstAsync(x => x.Id == app.StackId, CancellationToken.None);
             var configPath = stack.ConfigFile;
 
             if (configPath is null && (!stack.PortainerManaged || !_portainerService.IsConfigured))
-                return HandleError(
-                    "Did not get config path and Portainer integration is disabled.",
-                    planOnly
-                );
+                return HandleError("Did not get config path and Portainer integration is disabled.", planOnly);
 
             string? configFileContent;
 
@@ -371,6 +369,9 @@ public class UpdateService
             {
                 updateSteps.Add($"In folder: {configPath}");
                 configFileContent = _fileService.ReadAllText(configPath);
+
+                if (configFileContent is null)
+                    return HandleError($"Failed to read config file at: {configPath}", planOnly);
             }
             else
             {
@@ -385,7 +386,7 @@ public class UpdateService
                 updateSteps.Add("Using Portainer-managed stack file for update");
             }
 
-            var matches = Regex.Matches(configFileContent, app.TargetImage).Count;
+            var matches = Regex.Count(configFileContent, app.TargetImage);
             var matchedCurrentVersionSegment = VersionHelper.ExtractVersionSegment(
                 app.Version,
                 app.Regex,
@@ -424,8 +425,8 @@ public class UpdateService
 
             if (matches == 0) // Did not find in main config, check .env
             {
-                var mainImageVersionLine = Regex
-                    .Matches(configFileContent, "\\${([a-zA-Z0-9\\-_]+):-[a-zA-Z0-9\\-_]+}")
+                var mainImageVersionLine = EnvVariableRegex()
+                    .Matches(configFileContent)
                     .FirstOrDefault(x =>
                         configFileContent.Contains(app.TargetImage.Split(':')[0] + $":{x.Value}")
                     );
@@ -445,9 +446,7 @@ public class UpdateService
                     }
 
                     envFile = Path.Combine(
-                        Path.GetDirectoryName(configPath) ?? string.Empty,
-                        ".env"
-                    );
+                        Path.GetDirectoryName(configPath) ?? string.Empty, ".env");
 
                     if (_fileService.Exists(envFile))
                     {
@@ -455,23 +454,14 @@ public class UpdateService
                         var envVarRegex = Regex.Escape(mainImageVersionLine.Groups[1].Value);
                         var targetImageSecondPortion = app.TargetImage.Split(':')[1];
                         currentEnvLine = Regex
-                            .Match(
-                                envFileContent,
-                                $"{envVarRegex}={Regex.Escape(targetImageSecondPortion)}"
-                            )
-                            .Value;
+                            .Match(envFileContent, $"{envVarRegex}={Regex.Escape(app.Version)}").Value;
 
                         if (!string.IsNullOrWhiteSpace(currentEnvLine))
                         {
-                            targetEnvLine = currentEnvLine.Replace(
-                                targetImageSecondPortion,
-                                newVersion
-                            );
+                            targetEnvLine = currentEnvLine.Replace(app.Version, newVersion);
 
                             updateSteps.Add($"Looking at {envFile} .env file");
-                            updateSteps.Add(
-                                $"Will replace {currentEnvLine} with {targetEnvLine} in the env file"
-                            );
+                            updateSteps.Add($"Will replace {currentEnvLine} with {targetEnvLine} in the env file");
 
                             if (app.MultiContainerAppId is not null)
                             {
@@ -489,7 +479,7 @@ public class UpdateService
                                     ),
                                 ];
 
-                                if (appsWithSharedEnvVersion.Any())
+                                if (appsWithSharedEnvVersion.Count > 0)
                                     updateSteps.Add(
                                         $"This update will also affect containers: {string.Join(", ", appsWithSharedEnvVersion.Select(x => x.Name))}"
                                     );
@@ -502,14 +492,12 @@ public class UpdateService
             {
                 resultingImage = app.TargetImage.Split(':')[0] + ':' + newVersion;
 
-                updateSteps.Add(
-                    $"Will replace {matches} occurrences of {app.TargetImage} and replace them with {resultingImage}"
-                );
+                updateSteps.Add($"Will replace {matches} occurrences of {app.TargetImage} and replace them with {resultingImage}");
             }
 
             updateSteps.Add($"Pull images for stack {stack.StackName} and restart");
 
-            if (updateSteps.Count < Constants.Limits.MINIMUM_UPDATE_STEPS)
+            if (updateSteps.Count < Limits.MinimumUpdateSteps)
             {
                 _logger.LogWarning(
                     "Did not generate a valid update plan, actually generated: {Steps}\n"
@@ -530,7 +518,7 @@ public class UpdateService
                     targetEnvLine
                 );
                 return HandleError(
-                    $"Did not generate a valid update plan. Update plan has fewer than {Constants.Limits.MINIMUM_UPDATE_STEPS} steps ({updateSteps.Count}).",
+                    $"Did not generate a valid update plan. Update plan has fewer than {Limits.MinimumUpdateSteps} steps ({updateSteps.Count}).",
                     planOnly
                 );
             }
@@ -550,7 +538,7 @@ public class UpdateService
                             cancellationToken
                         );
                     }
-                    catch (Exception ex)
+                    catch (Exception ex) when (ex is not OperationCanceledException)
                     {
                         _logger.LogError(
                             ex,
@@ -578,7 +566,7 @@ public class UpdateService
                                 rollbackStdErr += $"\n[ROLLBACK SUCCESS]\n";
                                 break;
                             }
-                            catch (Exception rollbackException)
+                            catch (Exception rollbackException) when (rollbackException is not OperationCanceledException)
                             {
                                 rollbackStdErr +=
                                     $"\n[ROLLBACK ATTEMPT {attemptCount + 1} STDERR]\n"
@@ -841,7 +829,7 @@ public class UpdateService
 
             throw;
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             if (!planOnly)
             {
